@@ -3,7 +3,7 @@
 " Version: 1.0.0
 " Description: Adds support for Gregorio project files with syntax highlighting,
 "              snippets, and editing commands for GABC Gregorian Chant Notation
-               (including NABC extended notation for ancient neumes)
+"              (including NABC extended notation for ancient neumes)
 
 if exists('g:loaded_gabc') || v:version < 700 || &compatible
   finish
