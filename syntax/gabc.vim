@@ -25,7 +25,7 @@ syntax match gabcHeaderSeparator /^%%.*$/
 " Header section - starts at beginning of file, ends before the %% separator line.
 syntax region gabcHeader start=/\%^/ end=/^\s*%%\s*$/me=s-1 contains=gabcHeaderField,gabcHeaderColon,gabcHeaderValue,gabcHeaderSemicolon,gabcComment
 " Body section - from the %% separator to EOF
-syntax region gabcBody start=/^\s*%%\s*$/ end=/\%$/ contains=ALL keepend
+syntax region gabcBody start=/^\s*%%\s*$/ end=/\%$/ keepend contains=gabcComment,gabcNotesRegion,gabcBoldTag,gabcItalicTag,gabcColorTag,gabcSmallCapsTag,gabcUnderlineTag,gabcTeletypeTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcTranslation,gabcLatexVerbatim,gabcSyllableContent
 highlight link gabcBody Normal
 " Body region - tudo após o separador %% até EOF
 " Field name (before ':')
@@ -141,7 +141,7 @@ syntax region gabcElementVerbatim start=+\\\[ev:+ end=+\\\]+ contained
 syntax region gabcNotesRegion start=/(/ end=/)/ contains=gabcNotePitch,gabcNotePitchAccident,gabcNoteInclinatum,gabcCustos,gabcOriscus,gabcOriscusScapus,gabcPesQuadratum,gabcQuilisma,gabcQuilismaQuadratum,gabcVirga,gabcVirgaReversa,gabcBivirga,gabcTrivirga,gabcStropha,gabcDistropha,gabcTristropha,gabcLiquescentDeminutus,gabcLiquescentAugmented,gabcLiquescentDiminished,gabcLinea,gabcCavum,gabcQuadratumSurrounded,gabcInitioDebilis,gabcNoteFusion,gabcPunctumMora,gabcEpisema,gabcIctus,gabcAccentAbove,gabcSpacingSmall,gabcSpacingMedium,gabcSpacingZero,gabcSpacingNonBreaking,gabcSpacingFactored,gabcVirgula,gabcDivisioMinimis,gabcDivisioMinima,gabcDivisioMinor,gabcDivisioMaior,gabcDivisioFinalis,gabcClef,gabcLineBreakJustified,gabcLineBreakRagged,gabcChoralSign,gabcChoralSignNabc,gabcBraceRoundedOver,gabcBraceRoundedUnder,gabcBraceCurlyOver,gabcBraceCurlyAccentedOver,gabcStemLong,gabcStemShort,gabcLedgerLineOver,gabcLedgerLineUnder,gabcSlurOver,gabcSlurUnder,gabcEpisemaOver,gabcEpisemaUnder,gabcAboveLinesText,gabcNoteMacro,gabcGlyphMacro,gabcElementMacro,gabcNoteVerbatim,gabcGlyphVerbatim,gabcElementVerbatim,gabcNabcRegion
 
 " NABC extended notation
-syntax region gabcNabcRegion start=/|/ end=/|\?/ contained contains=gabcNabcNeume,gabcNabcSubpunctis,gabcNabcPrepunctis,gabcNabcSignificantLetter,gabcNabcTironianLetter,gabcNabcSpacing
+syntax region gabcNabcRegion start=/\|/ end=/\|/ contained contains=gabcNabcNeume,gabcNabcSubpunctis,gabcNabcPrepunctis,gabcNabcSignificantLetter,gabcNabcTironianLetter,gabcNabcSpacing
 syntax match gabcNabcNeume /\(vi\|vs\|pu\|gr\|ta\|cl\|pe\|pq\|pt\|po\|pf\|to\|tr\|ci\|sc\|sf\|st\|ds\|ts\|tg\|bv\|tv\|pr\|pi\|or\|sa\|ql\|qi\|un\|oc\)[1-9]\?\([GMS>~-][1-9]\?\)\?\(h[a-np]\)\?\(!\)\?/ contained
 syntax match gabcNabcSubpunctis /su\([nqtuvwxyz]\?\)\([1-9]\)/ contained
 syntax match gabcNabcPrepunctis /pp\([nqtuvwxyz]\?\)\([1-9]\)/ contained
