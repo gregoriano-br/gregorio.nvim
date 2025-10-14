@@ -96,3 +96,21 @@ echo "3. Restart Neovim"
 echo "4. Open example.gabc to test functionality"
 echo ""
 echo "For detailed usage instructions, see README.md or :help gabc"
+
+# Optional: Headless smoke test with watchdog (no user config)
+if command -v nvim >/dev/null 2>&1; then
+    echo ""
+    echo "Running headless smoke test (watchdog 8s)…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE \
+        +"set rtp+=." +"filetype plugin on" +"syntax on" +"edit example.gabc" +"setf gabc" \
+        +"redir => output" +"silent! syntax list gabcHeader gabcNotesRegion" +"redir END" +"echo output" +"qall" \
+        2>/dev/null | sed -n '1,8p'
+    rc=${PIPESTATUS[0]}
+    if [ $rc -eq 0 ]; then
+        echo "✓ Headless smoke test completed"
+    else
+        echo "! Headless smoke test failed (rc=$rc)"
+    fi
+else
+    echo "! Neovim not found; skipping headless smoke test"
+fi

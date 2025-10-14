@@ -8,7 +8,11 @@ let b:did_ftplugin = 1
 
 " Comment settings for GABC (uses % for comments)
 setlocal commentstring=%\ %s
+" Mantém definição de comment leader, mas evita continuação automática em Enter/`o`
 setlocal comments=:%
+setlocal formatoptions-=r
+setlocal formatoptions-=o
+setlocal formatoptions-=c
 
 " Set up folding for GABC sections
 setlocal foldmethod=expr
@@ -47,7 +51,7 @@ function! GabcFoldLevel(lnum)
 endfunction
 
 " Undo settings when buffer is unloaded
-let b:undo_ftplugin = 'setlocal commentstring< comments< foldmethod< foldexpr< textwidth< wrap< linebreak<'
-let b:undo_ftplugin .= ' | iunmap <buffer> ('
-let b:undo_ftplugin .= ' | iunmap <buffer> ['
-let b:undo_ftplugin .= ' | iunmap <buffer> <'
+let b:undo_ftplugin = 'setlocal commentstring< comments< foldmethod< foldexpr< textwidth< wrap< linebreak< formatoptions<'
+let b:undo_ftplugin .= ' | silent! iunmap <buffer> ('
+let b:undo_ftplugin .= ' | silent! iunmap <buffer> ['
+let b:undo_ftplugin .= ' | silent! iunmap <buffer> <'
