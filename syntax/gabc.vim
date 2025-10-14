@@ -3,8 +3,17 @@
 " Maintainer: Laércio de Sousa
 " Latest Revision: 2025
 
-if exists('b:current_syntax')
+" Allow re-source when g:gabc_devmode is set (development override)
+if exists('b:current_syntax') && !exists('g:gabc_devmode')
   finish
+endif
+" In devmode, clear old header groups to avoid stale references
+if exists('g:gabc_devmode')
+  silent! syntax clear gabcHeaderField
+  silent! syntax clear gabcHeaderColon
+  silent! syntax clear gabcHeaderSemicolon
+  silent! syntax clear gabcHeaderValue
+  silent! syntax clear gabcHeader
 endif
 
 " Comments
@@ -14,16 +23,21 @@ highlight link gabcComment Comment
 " Header separator - must come before header region
 syntax match gabcHeaderSeparator /^%%.*$/
 
-" Header section - starts at beginning of file, ends at line before %%
-syntax region gabcHeader start=/\%^/ end=/\ze^%%/ contains=gabcHeaderLine,gabcComment
-syntax match gabcHeaderLine /^[\w-]\+:.*$/ contained contains=gabcHeaderField,gabcHeaderDelimiter,gabcHeaderValue
-syntax match gabcHeaderField /^[\w-]\+/ contained
-syntax match gabcHeaderDelimiter /[:;]/ contained
-syntax match gabcHeaderValue /:\s*\zs[^;]*\ze/ contained  
+" Header section - starts at beginning of file, ends before the %% separator line.
+syntax region gabcHeader start=/\%^/ end=/\ze^%%/ contains=gabcHeaderField,gabcHeaderColon,gabcHeaderValue,gabcHeaderSemicolon,gabcComment
+" Field name (before ':')
+syntax match gabcHeaderField /^[\w-]\+/ contained nextgroup=gabcHeaderColon
+" Colon separator
+syntax match gabcHeaderColon /:/ contained nextgroup=gabcHeaderValue skipwhite
+" Value (text after ':' up to ';') - lookbehind ensures we are after colon
+syntax match gabcHeaderValue /\%(:\s*\)\@<=\zs[^;]*\ze;/ contained nextgroup=gabcHeaderSemicolon
+" Semicolon terminator
+syntax match gabcHeaderSemicolon /;/ contained
 
-highlight link gabcHeaderField Keyword  
+highlight link gabcHeaderField Keyword
+highlight link gabcHeaderColon Operator
 highlight link gabcHeaderValue String
-highlight link gabcHeaderDelimiter Operator
+highlight link gabcHeaderSemicolon Delimiter
 highlight link gabcHeaderSeparator Special
 
 " Musical notes and neumes
