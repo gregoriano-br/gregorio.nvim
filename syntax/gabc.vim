@@ -15,12 +15,15 @@ highlight link gabcComment Comment
 syntax match gabcHeaderSeparator /^%%.*$/
 
 " Header section - starts at beginning of file, ends at line before %%
-syntax region gabcHeader start=/\%^/ end=/\ze^%%/ contains=gabcHeaderField,gabcHeaderValue,gabcComment
-syntax match gabcHeaderField /^[\w-]\+:/ contained
-syntax match gabcHeaderValue /:\s*[^;]*;/ contained
+syntax region gabcHeader start=/\%^/ end=/\ze^%%/ contains=gabcHeaderLine,gabcComment
+syntax match gabcHeaderLine /^[\w-]\+:.*$/ contained contains=gabcHeaderField,gabcHeaderDelimiter,gabcHeaderValue
+syntax match gabcHeaderField /^[\w-]\+/ contained
+syntax match gabcHeaderDelimiter /[:;]/ contained
+syntax match gabcHeaderValue /:\s*\zs[^;]*\ze/ contained  
 
 highlight link gabcHeaderField Keyword  
 highlight link gabcHeaderValue String
+highlight link gabcHeaderDelimiter Operator
 highlight link gabcHeaderSeparator Special
 
 " Musical notes and neumes
