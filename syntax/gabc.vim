@@ -25,6 +25,9 @@ syntax match gabcHeaderSeparator /^%%.*$/
 
 " Header section - starts at beginning of file, ends before the %% separator line.
 syntax region gabcHeader start=/\%^/ end=/\ze^%%/ contains=gabcHeaderField,gabcHeaderColon,gabcHeaderValue,gabcHeaderSemicolon,gabcComment
+" Body region - tudo após o separador %% até EOF
+syntax region gabcBody start=/^%%.*$/ end=/\%$/ contains=gabcNotesRegion,gabcFusibleNotesRegion,gabcNabcRegion,gabcBoldTag,gabcItalicTag,gabcColorTag,gabcSmallCapsTag,gabcUnderlineTag,gabcTeletypeTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcTranslation,gabcLatexVerbatim,gabcSyllableContent
+highlight link gabcBody Normal
 " Field name (before ':')
 syntax match gabcHeaderField /^[\w-]\+/ contained nextgroup=gabcHeaderColon
 " Colon separator
