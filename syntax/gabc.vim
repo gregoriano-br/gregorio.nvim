@@ -8,15 +8,19 @@ if exists('b:current_syntax')
 endif
 
 " Comments
-syntax match gabcComment /^%.*$/ contained
+syntax match gabcComment /^%.*$/
 highlight link gabcComment Comment
 
-" Header section
-syntax region gabcHeader start=/\%^/ end=/^%%\s*$/ contains=gabcHeaderField,gabcComment,gabcHeaderSeparator
+" Header separador (deve vir antes da região do cabeçalho)
+syntax match gabcHeaderSeparator /^%%\s*$/
+
+" Header section  
+syntax region gabcHeader start=/\%^/ end=/^%%\s*$/ contains=gabcHeaderLine,gabcComment
+syntax match gabcHeaderLine /^[\w-]\+:.*$/ contained contains=gabcHeaderField,gabcHeaderValue
 syntax match gabcHeaderField /^[\w-]\+:/ contained nextgroup=gabcHeaderValue
 syntax match gabcHeaderValue /.*$/ contained
-syntax match gabcHeaderSeparator /^%%\s*$/ contained
-highlight link gabcHeaderField Keyword
+
+highlight link gabcHeaderField Keyword  
 highlight link gabcHeaderValue String
 highlight link gabcHeaderSeparator Special
 
