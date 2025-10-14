@@ -149,6 +149,16 @@ syntax match gabcNabcSignificantLetter /ls\(a\|al\|am\|b\|c\|cm\|co\|cw\|d\|e\|e
 syntax match gabcNabcTironianLetter /lt\(do\|dr\|dx\|i\|ps\|qm\|sb\|se\|sj\|sl\|sn\|sp\|sr\|st\|us\)\([1-9]\)/ contained
 syntax match gabcNabcSpacing /\(\/\/\|\/\|``\|`\)/ contained
 
+" NABC pitch sub-highlights: 'h' and following pitch letter
+syntax match gabcNabcPitchPrefix /h/ contained containedin=gabcNabcNeume nextgroup=gabcNabcPitchLetter
+syntax match gabcNabcPitchLetter /[a-np]/ contained containedin=gabcNabcNeume
+
+" NABC ls/lt sub-highlights: prefix vs argument
+syntax match gabcNabcLsPrefix /ls/ contained containedin=gabcNabcSignificantLetter nextgroup=gabcNabcLsArg
+syntax match gabcNabcLsArg /\%(ls\)\@<=\zs[a-z-]\+\ze[1-9]/ contained containedin=gabcNabcSignificantLetter
+syntax match gabcNabcLtPrefix /lt/ contained containedin=gabcNabcTironianLetter nextgroup=gabcNabcLtArg
+syntax match gabcNabcLtArg /\%(lt\)\@<=\zs[a-z]\+\ze[1-9]/ contained containedin=gabcNabcTironianLetter
+
 " Fusible notes region
 syntax region gabcFusibleNotesRegion start=+@\\\[+ end=+\\\]+ contains=gabcNotePitch,gabcNotePitchAccident,gabcNoteInclinatum,gabcCustos,gabcOriscus,gabcOriscusScapus,gabcPesQuadratum,gabcQuilisma,gabcQuilismaQuadratum,gabcVirga,gabcVirgaReversa,gabcBivirga,gabcTrivirga,gabcStropha,gabcDistropha,gabcTristropha,gabcLiquescentDeminutus,gabcLiquescentAugmented,gabcLiquescentDiminished,gabcLinea,gabcCavum,gabcQuadratumSurrounded,gabcInitioDebilis,gabcNoteFusion,gabcPunctumMora,gabcEpisema,gabcIctus,gabcAccentAbove,gabcSpacingSmall,gabcSpacingMedium,gabcSpacingZero,gabcSpacingNonBreaking,gabcSpacingFactored,gabcVirgula,gabcDivisioMinimis,gabcDivisioMinima,gabcDivisioMinor,gabcDivisioMaior,gabcDivisioFinalis,gabcClef,gabcLineBreakJustified,gabcLineBreakRagged
 
@@ -268,6 +278,12 @@ highlight link gabcNabcPrepunctis Identifier
 highlight link gabcNabcSignificantLetter Identifier
 highlight link gabcNabcTironianLetter Identifier
 highlight link gabcNabcSpacing Type
+highlight link gabcNabcPitchPrefix Function
+highlight link gabcNabcPitchLetter Identifier
+highlight link gabcNabcLsPrefix Function
+highlight link gabcNabcLsArg Identifier
+highlight link gabcNabcLtPrefix Function
+highlight link gabcNabcLtArg Identifier
 
 " Markup tag highlighting
 highlight link gabcBoldTag htmlBold
