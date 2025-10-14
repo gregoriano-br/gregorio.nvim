@@ -11,14 +11,13 @@ endif
 syntax match gabcComment /^%.*$/
 highlight link gabcComment Comment
 
-" Header separador (deve vir antes da região do cabeçalho)
-syntax match gabcHeaderSeparator /^%%\s*$/
+" Header separator - must come before header region
+syntax match gabcHeaderSeparator /^%%.*$/
 
-" Header section  
-syntax region gabcHeader start=/\%^/ end=/^%%\s*$/ contains=gabcHeaderLine,gabcComment
-syntax match gabcHeaderLine /^[\w-]\+:.*$/ contained contains=gabcHeaderField,gabcHeaderValue
-syntax match gabcHeaderField /^[\w-]\+:/ contained nextgroup=gabcHeaderValue
-syntax match gabcHeaderValue /.*$/ contained
+" Header section - starts at beginning of file, ends at line before %%
+syntax region gabcHeader start=/\%^/ end=/\ze^%%/ contains=gabcHeaderField,gabcHeaderValue,gabcComment
+syntax match gabcHeaderField /^[\w-]\+:/ contained
+syntax match gabcHeaderValue /:\s*[^;]*;/ contained
 
 highlight link gabcHeaderField Keyword  
 highlight link gabcHeaderValue String
