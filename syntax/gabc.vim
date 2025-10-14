@@ -13,7 +13,7 @@ highlight link gabcComment Comment
 
 " Header section
 syntax region gabcHeader start=/\%^/ end=/^%%\s*$/ contains=gabcHeaderField,gabcComment,gabcHeaderSeparator
-syntax match gabcHeaderField /^\w\+:/ contained nextgroup=gabcHeaderValue
+syntax match gabcHeaderField /^[\w-]\+:/ contained nextgroup=gabcHeaderValue
 syntax match gabcHeaderValue /.*$/ contained
 syntax match gabcHeaderSeparator /^%%\s*$/ contained
 highlight link gabcHeaderField Keyword
