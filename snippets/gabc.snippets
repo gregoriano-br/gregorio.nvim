@@ -1,0 +1,233 @@
+# GABC snippets for vim-snippets or UltiSnips
+
+# Response markings
+snippet a/. "Antiphon Response" b
+<sp>A/</sp>.
+endsnippet
+
+snippet ca/. "Colored Antiphon Response" b
+<c><sp>A/</sp>.</c>
+endsnippet
+
+snippet r/. "Responsory Response" b
+<sp>R/</sp>.
+endsnippet
+
+snippet cr/. "Colored Responsory Response" b
+<c><sp>R/</sp>.</c>
+endsnippet
+
+snippet v/. "Verse" b
+<sp>V/</sp>.
+endsnippet
+
+snippet cv/. "Colored Verse" b
+<c><sp>V/</sp>.</c>
+endsnippet
+
+# Colored symbols
+snippet c+ "Colored Plus" b
+<c>+</c>
+endsnippet
+
+snippet c* "Colored Asterisk" b
+<c>*</c>
+endsnippet
+
+# Special characters
+snippet \~ "Special Tilde" w
+<sp>~</sp>
+endsnippet
+
+snippet c\~ "Colored Special Tilde" w
+<c><sp>~</sp></c>
+endsnippet
+
+snippet \- "Special Dash" w
+<sp>-</sp>
+endsnippet
+
+snippet \\ "Special Backslash" w
+<sp>\\</sp>
+endsnippet
+
+snippet \& "Special Ampersand" w
+<sp>&</sp>
+endsnippet
+
+snippet \# "Special Hash" w
+<sp>#</sp>
+endsnippet
+
+snippet \_ "Special Underscore" w
+<sp>_</sp>
+endsnippet
+
+# Verbatim parentheses and brackets
+snippet \( "Verbatim Open Paren" w
+<v>(</v>
+endsnippet
+
+snippet \) "Verbatim Close Paren" w
+<v>)</v>
+endsnippet
+
+snippet \[ "Verbatim Open Bracket" w
+<v>[</v>
+endsnippet
+
+snippet \] "Verbatim Close Bracket" w
+<v>]</v>
+endsnippet
+
+# Colored verbatim
+snippet c\( "Colored Verbatim Open Paren" w
+<c><v>(</v></c>
+endsnippet
+
+snippet c\) "Colored Verbatim Close Paren" w
+<c><v>)</v></c>
+endsnippet
+
+snippet c\[ "Colored Verbatim Open Bracket" w
+<c><v>[</v></c>
+endsnippet
+
+snippet c\] "Colored Verbatim Close Bracket" w
+<c><v>]</v></c>
+endsnippet
+
+# LaTeX verbatim
+snippet v\ "LaTeX Verbatim" w
+<v>\\$0</v>
+endsnippet
+
+# Markup tags
+snippet bold "Bold markup" w
+<b>$1</b>$0
+endsnippet
+
+snippet italic "Italic markup" w
+<i>$1</i>$0
+endsnippet
+
+snippet color "Color markup" w
+<c>$1</c>$0
+endsnippet
+
+snippet smallcaps "Small caps markup" w
+<sc>$1</sc>$0
+endsnippet
+
+snippet underline "Underline markup" w
+<ul>$1</ul>$0
+endsnippet
+
+snippet teletype "Teletype markup" w
+<tt>$1</tt>$0
+endsnippet
+
+# Control tags
+snippet clear "Clear tag" w
+<clear>$1</clear>$0
+endsnippet
+
+snippet elision "Elision tag" w
+<e>$1</e>$0
+endsnippet
+
+snippet euouae "Euouae tag" w
+<eu>$1</eu>$0
+endsnippet
+
+snippet nolinebreak "No line break tag" w
+<nlba>$1</nlba>$0
+endsnippet
+
+snippet special "Special tag" w
+<sp>$1</sp>$0
+endsnippet
+
+snippet verbatim "Verbatim tag" w
+<v>$1</v>$0
+endsnippet
+
+snippet alt "Above lines text tag" w
+<alt>$1</alt>$0
+endsnippet
+
+# Translation
+snippet trans "Translation" w
+[$1]$0
+endsnippet
+
+# Notes
+snippet notes "Notes region" w
+($1)$0
+endsnippet
+
+# Common GABC header structure
+snippet gabcheader "GABC Header Template" b
+name: ${1:Chant Name};
+annotation: ${2:Annotation};
+annotation: ${3:Mode};
+mode: ${4:1};
+office-part: ${5:antiphona};
+book: ${6:Book Name};
+transcriber: ${7:Transcriber Name};
+%%
+$0
+endsnippet
+
+# NABC header
+snippet nabcheader "GABC Header with NABC" b
+name: ${1:Chant Name};
+annotation: ${2:Annotation};
+annotation: ${3:Mode};
+mode: ${4:1};
+office-part: ${5:antiphona};
+nabc-lines: ${6:1};
+book: ${7:Book Name};
+transcriber: ${8:Transcriber Name};
+%%
+$0
+endsnippet
+
+# Common neume patterns
+snippet punctum "Punctum" w
+$1($2)$0
+endsnippet
+
+snippet pes "Pes" w
+$1($2$3)$0
+endsnippet
+
+snippet clivis "Clivis" w
+$1($2$3)$0
+endsnippet
+
+snippet torculus "Torculus" w
+$1($2$3$4)$0
+endsnippet
+
+snippet porrectus "Porrectus" w
+$1($2$3$4)$0
+endsnippet
+
+# Clefs
+snippet clef "Clef" w
+(${1:c}${2:4})
+endsnippet
+
+# Divisions
+snippet virgula "Virgula" w
+(`)$0
+endsnippet
+
+snippet divisio "Divisio" w
+(${1:,})$0
+endsnippet
+
+snippet finalis "Divisio Finalis" w
+(::)$0
+endsnippet

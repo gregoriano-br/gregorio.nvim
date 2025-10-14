@@ -1,0 +1,407 @@
+*gregorio.txt*	Gregorio plugin for Neovim
+
+Author: Laércio de Sousa
+License: MIT
+Version: 1.0.0
+
+==============================================================================
+CONTENTS							*gregorio-contents*
+
+1. Introduction						|gregorio-introduction|
+2. Installation						|gregorio-installation|
+3. Configuration					|gregorio-configuration|
+4. Commands						|gregorio-commands|
+5. Keymaps						|gregorio-keymaps|
+6. Snippets						|gregorio-snippets|
+7. Syntax Highlighting					|gregorio-syntax|
+8. Functions						|gregorio-functions|
+9. Examples						|gregorio-examples|
+10. Changelog						|gregorio-changelog|
+
+==============================================================================
+1. INTRODUCTION						*gregorio-introduction*
+
+GABC (Gregorian Chant notation) is a text-based format for encoding
+Gregorian chant melodies, as part of the Gregorio project
+(https://gregorio-project.github.io). This plugin provides comprehensive
+support for GABC files in Neovim, including:
+
+- Syntax highlighting for GABC notation (including NABC extension)
+- Intelligent snippets for rapid GABC code entry
+- Text markup commands (bold, italic, color, etc.)
+- Musical transposition capabilities
+- Ligature conversion between Unicode symbols and <sp> tags
+- Automatic parentheses filling
+- NABC extension detection with statusline indication
+- Basic GABC syntax validation
+- Auto-formatting and code cleanup
+
+==============================================================================
+2. INSTALLATION						*gregorio-installation*
+
+Using vim-plug: >
+	Plug 'your-username/gregorio.nvim'
+<
+
+Using packer.nvim: >
+	use 'your-username/gregorio.nvim'
+<
+
+Using lazy.nvim: >
+	{
+	  'your-username/gregorio.nvim',
+	  ft = 'gabc',
+	  config = function()
+	    require('gabc').setup()
+	  end,
+	}
+<
+
+Manual installation:
+1. Clone the repository to your Neovim configuration directory
+2. Restart Neovim or run |:PackerSync| / |:PlugInstall|
+
+==============================================================================
+3. CONFIGURATION					*gregorio-configuration*
+
+Basic setup: >
+	lua require('gabc').setup()
+<
+
+Advanced configuration: >
+	lua << EOF
+	require('gabc').setup({
+	  -- Disable default keymaps (default: true)
+	  enable_default_keymaps = true,
+	  
+	  -- Show NABC status in statusline (default: true)
+	  statusline_nabc = true,
+	  
+	  -- Auto-format on save (default: false)
+	  auto_format = false,
+	  
+	  -- Auto-validate on save (default: false)
+	  auto_validate = false,
+	})
+	EOF
+<
+
+Statusline integration:
+
+For Vim statusline: >
+	set statusline+=%{GabcStatusNabc()}
+<
+
+For lualine: >
+	lua << EOF
+	require('lualine').setup({
+	  sections = {
+	    lualine_x = { 
+	      function()
+	        return require('gabc').statusline()
+	      end
+	    }
+	  }
+	})
+	EOF
+<
+
+==============================================================================
+4. COMMANDS						*gregorio-commands*
+
+MARKUP COMMANDS						*gregorio-markup-commands*
+
+:GabcAddBold[!] [range]					*:GabcAddBold*
+	Add <b></b> markup tags to syllable text (excluding musical notation).
+
+:GabcAddItalic[!] [range]				*:GabcAddItalic*
+	Add <i></i> markup tags to syllable text (excluding musical notation).
+
+:GabcAddColor[!] [range]				*:GabcAddColor*
+	Add <c></c> markup tags to syllable text (excluding musical notation).
+
+:GabcAddSmallCaps[!] [range]				*:GabcAddSmallCaps*
+	Add <sc></sc> markup tags to syllable text (excluding musical notation).
+
+:GabcAddUnderline[!] [range]				*:GabcAddUnderline*
+	Add <ul></ul> markup tags to syllable text (excluding musical notation).
+
+:GabcAddTeletype[!] [range]				*:GabcAddTeletype*
+	Add <tt></tt> markup tags to syllable text (excluding musical notation).
+
+:GabcRemoveMarkup[!] [range]				*:GabcRemoveMarkup*
+	Remove all markup tags from text in the selection.
+
+TRANSPOSITION COMMANDS					*gregorio-transpose-commands*
+
+:GabcTransposeUp[!] [range]				*:GabcTransposeUp*
+	Transpose musical notes up by one step in the selection.
+
+:GabcTransposeDown[!] [range]				*:GabcTransposeDown*
+	Transpose musical notes down by one step in the selection.
+
+UTILITY COMMANDS					*gregorio-utility-commands*
+
+:GabcFillParens[!] [range]				*:GabcFillParens*
+	Fill empty parentheses () with default note (f).
+
+:GabcConvertLigaturesToTags				*:GabcConvertLigaturesToTags*
+	Convert Unicode ligatures (æ, œ) to <sp> tags throughout the file
+	(excluding header section).
+
+:GabcConvertTagsToLigatures				*:GabcConvertTagsToLigatures*
+	Convert <sp> tags back to Unicode ligatures (æ, œ) throughout the file
+	(excluding header section).
+
+:GabcValidate						*:GabcValidate*
+	Perform basic syntax validation on the current GABC file.
+
+:GabcCleanFormat					*:GabcCleanFormat*
+	Clean up formatting issues like extra spaces and normalize markup.
+
+NABC COMMANDS						*gregorio-nabc-commands*
+
+:GabcToggleNabc						*:GabcToggleNabc*
+	Toggle NABC extension in the current file header.
+
+:GabcAddNabc						*:GabcAddNabc*
+	Add NABC extension to the current file header.
+
+:GabcRemoveNabc						*:GabcRemoveNabc*
+	Remove NABC extension from the current file header.
+
+INFORMATION COMMANDS					*gregorio-info-commands*
+
+:GabcInfo						*:GabcInfo*
+	Display plugin information and current file status.
+
+==============================================================================
+5. KEYMAPS						*gregorio-keymaps*
+
+Default keymaps (can be disabled with g:gabc_no_default_mappings = 1):
+
+MARKUP KEYMAPS						*gregorio-markup-keymaps*
+<C-A-b>		Add bold markup to syllable text
+<C-A-i>		Add italic markup to syllable text
+<C-A-c>		Add color markup to syllable text
+<C-A-s>		Add small caps markup to syllable text
+<C-A-u>		Add underline markup to syllable text
+<C-A-t>		Add teletype markup to syllable text
+<C-A-r>		Remove all markup from selected text
+
+TRANSPOSITION KEYMAPS					*gregorio-transpose-keymaps*
+<C-A-=>		Transpose notes up in selection
+<C-A-->		Transpose notes down in selection
+
+UTILITY KEYMAPS						*gregorio-utility-keymaps*
+<C-A-l>		Fill empty parentheses in selection
+<C-A-L>		Convert ligatures to <sp> tags
+<C-A-T>		Convert <sp> tags to ligatures
+
+All keymaps work in both normal and visual modes for applicable ranges.
+
+==============================================================================
+6. SNIPPETS						*gregorio-snippets*
+
+The plugin includes numerous snippets to accelerate GABC writing:
+
+RESPONSE AND VERSE SNIPPETS				*gregorio-response-snippets*
+a/.		<sp>A/</sp>. 	(Antiphon response)
+r/.		<sp>R/</sp>.	(Responsory response)
+v/.		<sp>V/</sp>.	(Verse)
+ca/.		<c><sp>A/</sp>.</c>	(Colored antiphon response)
+cr/.		<c><sp>R/</sp>.</c>	(Colored responsory response)
+cv/.		<c><sp>V/</sp>.</c>	(Colored verse)
+
+SPECIAL SYMBOLS						*gregorio-symbol-snippets*
+c+		<c>+</c>		(Colored plus)
+c*		<c>*</c>		(Colored asterisk)
+\~		<sp>~</sp>		(Special tilde)
+c\~		<c><sp>~</sp></c>	(Colored special tilde)
+\-		<sp>-</sp>		(Special dash)
+\\		<sp>\</sp>		(Special backslash)
+\&		<sp>&</sp>		(Special ampersand)
+\#		<sp>#</sp>		(Special hash)
+\_		<sp>_</sp>		(Special underscore)
+
+MARKUP TAGS						*gregorio-markup-snippets*
+bold		<b>$1</b>$0
+italic		<i>$1</i>$0
+color		<c>$1</c>$0
+smallcaps	<sc>$1</sc>$0
+underline	<ul>$1</ul>$0
+teletype	<tt>$1</tt>$0
+
+HEADER TEMPLATES					*gregorio-header-snippets*
+gabcheader	Complete GABC header template
+nabcheader	GABC header template with NABC extension
+
+COMMON NEUMES						*gregorio-neume-snippets*
+punctum		$1($2)$0
+pes		$1($2$3)$0
+clivis		$1($2$3)$0
+torculus	$1($2$3$4)$0
+porrectus	$1($2$3$4)$0
+
+CLEFS AND DIVISIONS					*gregorio-clef-snippets*
+clef		(${1:c}${2:4})
+virgula		(`)$0
+divisio		(${1:,})$0
+finalis		(::)$0
+
+==============================================================================
+7. SYNTAX HIGHLIGHTING					*gregorio-syntax*
+
+The plugin provides comprehensive syntax highlighting for:
+
+HEADER ELEMENTS						*gregorio-header-syntax*
+- Header fields (name:, annotation:, mode:, etc.)
+- Header values  
+- Header separator (%%)
+- Comments (% at line start)
+
+MUSICAL NOTATION					*gregorio-musical-syntax*
+- Note pitches (a-n, p)
+- Note accidents (#, x, y for sharp, flat, natural)
+- Custos (notes with +)
+- Inclinatum notes (A-N, P with optional numbers)
+
+NEUME SHAPES						*gregorio-neume-syntax*
+- Oriscus (o, O with optional variants)
+- Pes quadratum (q)
+- Quilisma (w, W)
+- Virga (v, V, vv, vvv)
+- Stropha (s, ss, sss)
+- Liquescent forms (~, >, <)
+- Linea (=)
+- Cavum (r, r0)
+- Quadratum surrounded (R)
+
+SYMBOLS AND MODIFIERS					*gregorio-symbol-syntax*
+- Punctum mora (.)
+- Episema (_ with optional numbers)
+- Ictus (' with optional numbers)
+- Accents above (r1-r8)
+
+SPACING AND LAYOUT					*gregorio-spacing-syntax*
+- Spacing controls (/, //, !, etc.)
+- Factored spacing (/[number])
+- Separation bars (`, ^, ,, ;, :, ::)
+- Clefs (c1-c4, f1-f4, cb1-cb4, fb1-fb4)
+- Line breaks (z, Z with optional modifiers)
+
+MARKUP TAGS						*gregorio-markup-syntax*
+- Text formatting (<b>, <i>, <c>, <sc>, <ul>, <tt>)
+- Control tags (<clear>, <e>, <eu>, <nlba>)
+- Special tags (<sp>, <v>, <alt>)
+- Translation text ([text])
+
+NABC EXTENSION						*gregorio-nabc-syntax*
+- NABC regions (|notation|)
+- Neume prefixes (vi, vs, pu, gr, etc.)
+- Glyph modifiers (G, M, S with numbers)
+- Significant letters (ls + letter codes)
+- Tironian letters (lt + letter codes)
+- Subpunctis and prepunctis (su, pp)
+
+==============================================================================
+8. FUNCTIONS						*gregorio-functions*
+
+Lua functions available for advanced usage:
+
+require('gabc').setup({options})			*gabc.setup()*
+	Initialize the plugin with the given options.
+
+require('gabc').markup.add(tag, line1, line2)		*gabc.markup.add()*
+	Add markup tag to syllables in the specified range.
+
+require('gabc').markup.remove(line1, line2)		*gabc.markup.remove()*
+	Remove all markup from syllables in the specified range.
+
+require('gabc').transpose.up(line1, line2)		*gabc.transpose.up()*
+	Transpose notes up in the specified range.
+
+require('gabc').transpose.down(line1, line2)		*gabc.transpose.down()*
+	Transpose notes down in the specified range.
+
+require('gabc').utils.fill_parens(line1, line2)	*gabc.utils.fill_parens()*
+	Fill empty parentheses in the specified range.
+
+require('gabc').utils.convert_ligatures_to_tags()	*gabc.utils.convert_ligatures_to_tags()*
+	Convert ligatures to <sp> tags in the entire file.
+
+require('gabc').utils.convert_tags_to_ligatures()	*gabc.utils.convert_tags_to_ligatures()*
+	Convert <sp> tags to ligatures in the entire file.
+
+require('gabc').utils.validate()			*gabc.utils.validate()*
+	Validate GABC syntax in the current file.
+
+require('gabc').utils.clean_format()			*gabc.utils.clean_format()*
+	Clean up formatting in the current file.
+
+require('gabc').nabc.status()				*gabc.nabc.status()*
+	Get NABC status string for statusline.
+
+require('gabc').nabc.toggle_nabc_extension()		*gabc.nabc.toggle_nabc_extension()*
+	Toggle NABC extension in current file.
+
+require('gabc').statusline()				*gabc.statusline()*
+	Get statusline string (convenience function).
+
+require('gabc').info()					*gabc.info()*
+	Get plugin and file information.
+
+VimScript functions:
+
+GabcStatusNabc()					*GabcStatusNabc()*
+	VimScript wrapper for NABC statusline integration.
+
+==============================================================================
+9. EXAMPLES						*gregorio-examples*
+
+Basic GABC file structure: >
+	name: Kyrie eleison;
+	annotation: XVII;
+	mode: 1;
+	%%
+	Ký(f)ri(gfg)e(h.) *() e(ixjvIH'GhvF'E)lé(ghg')i(g)son.(f.) (::)
+<
+
+Using markup commands:
+1. Select text: Ký(f)ri(gfg)e(h.)
+2. Press <C-A-b> or run :GabcAddBold
+3. Result: <b>Ký</b>(f)<b>ri</b>(gfg)<b>e</b>(h.)
+
+Transposing notes:
+1. Select: Ký(f)ri(gfg)e(h.)  
+2. Press <C-A-=> to transpose up
+3. Result: Ký(g)ri(hgh)e(i.)
+
+Filling parentheses:
+1. Text: Ký(f)ri(gfg)e() ele()
+2. Run :GabcFillParens
+3. Result: Ký(f)ri(gfg)e(f) ele(f)
+
+NABC extension example: >
+	name: Antiphon with NABC;
+	nabc-lines: 1;
+	%%
+	Ký(f|vi1)ri(gfg|to)e(h.|ta) (::)
+<
+
+==============================================================================
+10. CHANGELOG						*gregorio-changelog*
+
+1.0.0
+- Initial release
+- Complete syntax highlighting for GABC and NABC
+- Markup commands for text formatting
+- Musical transposition capabilities  
+- Ligature conversion utilities
+- NABC extension detection and management
+- Comprehensive snippet collection
+- Basic syntax validation
+- Auto-formatting capabilities
+
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
