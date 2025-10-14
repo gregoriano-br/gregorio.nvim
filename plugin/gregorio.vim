@@ -76,3 +76,9 @@ augroup GabcNabc
   autocmd!
   autocmd BufEnter,TextChanged,TextChangedI *.gabc lua require('gabc').nabc.update_status()
 augroup END
+
+" Ensure comment continuation is disabled for GABC (no auto '%')
+augroup GabcFormatOptions
+  autocmd!
+  autocmd FileType gabc setlocal formatoptions-=r formatoptions-=o formatoptions-=c
+augroup END

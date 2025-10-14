@@ -19,15 +19,15 @@ endif
 " Comments
 syntax match gabcComment /^%.*$/
 highlight link gabcComment Comment
-
 " Header separator - must come before header region
 syntax match gabcHeaderSeparator /^%%.*$/
 
 " Header section - starts at beginning of file, ends before the %% separator line.
-syntax region gabcHeader start=/\%^/ end=/\ze^%%/ contains=gabcHeaderField,gabcHeaderColon,gabcHeaderValue,gabcHeaderSemicolon,gabcComment
-" Body region - tudo após o separador %% até EOF
-syntax region gabcBody start=/^%%.*$/ end=/\%$/ contains=gabcNotesRegion,gabcFusibleNotesRegion,gabcNabcRegion,gabcBoldTag,gabcItalicTag,gabcColorTag,gabcSmallCapsTag,gabcUnderlineTag,gabcTeletypeTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcTranslation,gabcLatexVerbatim,gabcSyllableContent
+syntax region gabcHeader start=/\%^/ end=/^\s*%%\s*$/me=s-1 contains=gabcHeaderField,gabcHeaderColon,gabcHeaderValue,gabcHeaderSemicolon,gabcComment
+" Body section - from the %% separator to EOF
+syntax region gabcBody start=/^\s*%%\s*$/ end=/\%$/ contains=ALL keepend
 highlight link gabcBody Normal
+" Body region - tudo após o separador %% até EOF
 " Field name (before ':')
 syntax match gabcHeaderField /^[\w-]\+/ contained nextgroup=gabcHeaderColon
 " Colon separator
@@ -173,14 +173,16 @@ syntax region gabcSpecialTag start=/<sp>/ end=/<\/sp>/ contains=gabcSyllableCont
 syntax region gabcVerbatimTag start=/<v>/ end=/<\/v>/ contains=gabcLatexVerbatim
 
 " Translation text
-syntax region gabcTranslation start=/\[/ end=/\]/ 
+syntax region gabcTranslation start=/\[/ end=/\]/
 highlight link gabcTranslation String
 
 " LaTeX verbatim content
-syntax match gabcLatexVerbatim /\\\\.*/ contained
+syntax match gabcLatexVerbatim /\\\\.*/
 
 " Syllable content (text between tags and notes)
-syntax match gabcSyllableContent /[^<>()\\[\\]]\+/ contained
+" Texto de sílabas (fora das notas e dentro de tags). Só aparece no corpo
+" (gabcBody, tags etc.) e fica desativado dentro de gabcNotesRegion.
+syntax match gabcSyllableContent /[^<>()\\[\\]]\+/ contained containedin=ALLBUT,gabcNotesRegion
 
 " Highlight groups
 highlight link gabcNotePitch Constant
@@ -286,7 +288,7 @@ highlight link gabcSpecialTag Special
 highlight link gabcVerbatimTag String
 
 highlight link gabcLatexVerbatim String
-highlight link gabcSyllableContent Normal
+highlight link gabcSyllableContent Statement
 
 " Regions highlighting
 highlight link gabcNotesRegion Structure
