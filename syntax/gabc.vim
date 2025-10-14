@@ -55,15 +55,15 @@ syntax match gabcIctus /'[01]\?/ contained
 syntax match gabcAccentAbove /r[1-8]/ contained
 
 " Spacing controls
-syntax match gabcSpacingSmall /\\/\\/ contained
-syntax match gabcSpacingMedium /\\/\\/\\// contained
+syntax match gabcSpacingSmall /\// contained
+syntax match gabcSpacingMedium /\/\// contained
 syntax match gabcSpacingZero /!/ contained
 syntax match gabcSpacingNonBreaking /! / contained
-syntax region gabcSpacingFactored start=/\\/\\[/ end=/\\]/ contained
+syntax region gabcSpacingFactored start=+/\\\[+ end=+\\\]+ contained
 
 " Separation bars
 syntax match gabcVirgula /`0\?/ contained
-syntax match gabcDivisioMinimis /\\^0\?/ contained
+syntax match gabcDivisioMinimis /\^0\?/ contained
 syntax match gabcDivisioMinima /,[0_]\?/ contained
 syntax match gabcDivisioMinor /;[1-6]\?/ contained
 syntax match gabcDivisioMaior /:?\?/ contained
@@ -78,41 +78,41 @@ syntax match gabcLineBreakJustified /z[+-]\?/ contained
 syntax match gabcLineBreakRagged /Z[+-]\?/ contained
 
 " Choral signs and braces
-syntax region gabcChoralSign start=/\\[ch:/ end=/\\]/ contained
-syntax region gabcChoralSignNabc start=/\\[cn:/ end=/\\]/ contained
-syntax region gabcBraceRoundedOver start=/\\[ob:/ end=/\\]/ contained
-syntax region gabcBraceRoundedUnder start=/\\[ub:/ end=/\\]/ contained
-syntax region gabcBraceCurlyOver start=/\\[ocb:/ end=/\\]/ contained
-syntax region gabcBraceCurlyAccentedOver start=/\\[ocba:/ end=/\\]/ contained
+syntax region gabcChoralSign start=+\\\[ch:+ end=+\\\]+ contained
+syntax region gabcChoralSignNabc start=+\\\[cn:+ end=+\\\]+ contained
+syntax region gabcBraceRoundedOver start=+\\\[ob:+ end=+\\\]+ contained
+syntax region gabcBraceRoundedUnder start=+\\\[ub:+ end=+\\\]+ contained
+syntax region gabcBraceCurlyOver start=+\\\[ocb:+ end=+\\\]+ contained
+syntax region gabcBraceCurlyAccentedOver start=+\\\[ocba:+ end=+\\\]+ contained
 
 " Stem length controls
-syntax match gabcStemLong /\\[ll:1\\]/ contained
-syntax match gabcStemShort /\\[ll:0\\]/ contained
+syntax match gabcStemLong +\\\[ll:1\\\]+ contained
+syntax match gabcStemShort +\\\[ll:0\\\]+ contained
 
 " Custom ledger lines
-syntax region gabcLedgerLineOver start=/\\[oll:/ end=/\\]/ contained
-syntax region gabcLedgerLineUnder start=/\\[ull:/ end=/\\]/ contained
+syntax region gabcLedgerLineOver start=+\\\[oll:+ end=+\\\]+ contained
+syntax region gabcLedgerLineUnder start=+\\\[ull:+ end=+\\\]+ contained
 
 " Slurs
-syntax region gabcSlurOver start=/\\[oslur:/ end=/\\]/ contained
-syntax region gabcSlurUnder start=/\\[uslur:/ end=/\\]/ contained
+syntax region gabcSlurOver start=+\\\[oslur:+ end=+\\\]+ contained
+syntax region gabcSlurUnder start=+\\\[uslur:+ end=+\\\]+ contained
 
 " Episema tuning
-syntax region gabcEpisemaOver start=/\\[oh:\?/ end=/\\]/ contained
-syntax region gabcEpisemaUnder start=/\\[uh:\?/ end=/\\]/ contained
+syntax region gabcEpisemaOver start=+\\\[oh:\?+ end=+\\\]+ contained
+syntax region gabcEpisemaUnder start=+\\\[uh:\?+ end=+\\\]+ contained
 
 " Above-lines text
-syntax region gabcAboveLinesText start=/\\[alt:/ end=/\\]/ contained
+syntax region gabcAboveLinesText start=+\\\[alt:+ end=+\\\]+ contained
 
 " Macros
-syntax region gabcNoteMacro start=/\\[nm/ end=/\\]/ contained
-syntax region gabcGlyphMacro start=/\\[gm/ end=/\\]/ contained
-syntax region gabcElementMacro start=/\\[em/ end=/\\]/ contained
+syntax region gabcNoteMacro start=+\\\[nm+ end=+\\\]+ contained
+syntax region gabcGlyphMacro start=+\\\[gm+ end=+\\\]+ contained
+syntax region gabcElementMacro start=+\\\[em+ end=+\\\]+ contained
 
 " Verbatim sections in notes
-syntax region gabcNoteVerbatim start=/\\[nv:/ end=/\\]/ contained
-syntax region gabcGlyphVerbatim start=/\\[gv:/ end=/\\]/ contained
-syntax region gabcElementVerbatim start=/\\[ev:/ end=/\\]/ contained
+syntax region gabcNoteVerbatim start=+\\\[nv:+ end=+\\\]+ contained
+syntax region gabcGlyphVerbatim start=+\\\[gv:+ end=+\\\]+ contained
+syntax region gabcElementVerbatim start=+\\\[ev:+ end=+\\\]+ contained
 
 " Notes region (inside parentheses)
 syntax region gabcNotesRegion start=/(/ end=/)/ contains=gabcNotePitch,gabcNotePitchAccident,gabcNoteInclinatum,gabcCustos,gabcOriscus,gabcOriscusScapus,gabcPesQuadratum,gabcQuilisma,gabcQuilismaQuadratum,gabcVirga,gabcVirgaReversa,gabcBivirga,gabcTrivirga,gabcStropha,gabcDistropha,gabcTristropha,gabcLiquescentDeminutus,gabcLiquescentAugmented,gabcLiquescentDiminished,gabcLinea,gabcCavum,gabcQuadratumSurrounded,gabcInitioDebilis,gabcNoteFusion,gabcPunctumMora,gabcEpisema,gabcIctus,gabcAccentAbove,gabcSpacingSmall,gabcSpacingMedium,gabcSpacingZero,gabcSpacingNonBreaking,gabcSpacingFactored,gabcVirgula,gabcDivisioMinimis,gabcDivisioMinima,gabcDivisioMinor,gabcDivisioMaior,gabcDivisioFinalis,gabcClef,gabcLineBreakJustified,gabcLineBreakRagged,gabcChoralSign,gabcChoralSignNabc,gabcBraceRoundedOver,gabcBraceRoundedUnder,gabcBraceCurlyOver,gabcBraceCurlyAccentedOver,gabcStemLong,gabcStemShort,gabcLedgerLineOver,gabcLedgerLineUnder,gabcSlurOver,gabcSlurUnder,gabcEpisemaOver,gabcEpisemaUnder,gabcAboveLinesText,gabcNoteMacro,gabcGlyphMacro,gabcElementMacro,gabcNoteVerbatim,gabcGlyphVerbatim,gabcElementVerbatim,gabcNabcRegion
@@ -124,33 +124,33 @@ syntax match gabcNabcSubpunctis /su\([nqtuvwxyz]\?\)\([1-9]\)/ contained
 syntax match gabcNabcPrepunctis /pp\([nqtuvwxyz]\?\)\([1-9]\)/ contained
 syntax match gabcNabcSignificantLetter /ls\(a\|al\|am\|b\|c\|cm\|co\|cw\|d\|e\|eq-\|eq\|equ\|ew\|f\|fid\|fr\|g\|h\|hn\|hp\|i\|im\|iv\|k\|l\|lb\|lc\|len\|lm\|lp\|lt\|m\|md\|moll\|n\|nl\|nt\|p\|par\|pfec\|pm\|pulcre\|s\|sb\|sc\|simil\|simp\|simpl\|simul\|sm\|sp\|st\|sta\|t\|tb\|th\|tm\|tw\|v\|vol\|x\)\([1-9]\)/ contained
 syntax match gabcNabcTironianLetter /lt\(do\|dr\|dx\|i\|ps\|qm\|sb\|se\|sj\|sl\|sn\|sp\|sr\|st\|us\)\([1-9]\)/ contained
-syntax match gabcNabcSpacing /\(\\/\\/\|\\/\|``\|`\)/ contained
+syntax match gabcNabcSpacing /\(\/\/\|\/\|``\|`\)/ contained
 
 " Fusible notes region
-syntax region gabcFusibleNotesRegion start=/@\\[/ end=/\\]/ contains=gabcNotePitch,gabcNotePitchAccident,gabcNoteInclinatum,gabcCustos,gabcOriscus,gabcOriscusScapus,gabcPesQuadratum,gabcQuilisma,gabcQuilismaQuadratum,gabcVirga,gabcVirgaReversa,gabcBivirga,gabcTrivirga,gabcStropha,gabcDistropha,gabcTristropha,gabcLiquescentDeminutus,gabcLiquescentAugmented,gabcLiquescentDiminished,gabcLinea,gabcCavum,gabcQuadratumSurrounded,gabcInitioDebilis,gabcNoteFusion,gabcPunctumMora,gabcEpisema,gabcIctus,gabcAccentAbove,gabcSpacingSmall,gabcSpacingMedium,gabcSpacingZero,gabcSpacingNonBreaking,gabcSpacingFactored,gabcVirgula,gabcDivisioMinimis,gabcDivisioMinima,gabcDivisioMinor,gabcDivisioMaior,gabcDivisioFinalis,gabcClef,gabcLineBreakJustified,gabcLineBreakRagged
+syntax region gabcFusibleNotesRegion start=+@\\\[+ end=+\\\]+ contains=gabcNotePitch,gabcNotePitchAccident,gabcNoteInclinatum,gabcCustos,gabcOriscus,gabcOriscusScapus,gabcPesQuadratum,gabcQuilisma,gabcQuilismaQuadratum,gabcVirga,gabcVirgaReversa,gabcBivirga,gabcTrivirga,gabcStropha,gabcDistropha,gabcTristropha,gabcLiquescentDeminutus,gabcLiquescentAugmented,gabcLiquescentDiminished,gabcLinea,gabcCavum,gabcQuadratumSurrounded,gabcInitioDebilis,gabcNoteFusion,gabcPunctumMora,gabcEpisema,gabcIctus,gabcAccentAbove,gabcSpacingSmall,gabcSpacingMedium,gabcSpacingZero,gabcSpacingNonBreaking,gabcSpacingFactored,gabcVirgula,gabcDivisioMinimis,gabcDivisioMinima,gabcDivisioMinor,gabcDivisioMaior,gabcDivisioFinalis,gabcClef,gabcLineBreakJustified,gabcLineBreakRagged
 
 " Text markup tags
-syntax region gabcBoldTag start=/<b>/ end=/<\\/b>/ contains=gabcSyllableContent
-syntax region gabcItalicTag start=/<i>/ end=/<\\/i>/ contains=gabcSyllableContent
-syntax region gabcColorTag start=/<c>/ end=/<\\/c>/ contains=gabcSyllableContent
-syntax region gabcSmallCapsTag start=/<sc>/ end=/<\\/sc>/ contains=gabcSyllableContent
-syntax region gabcUnderlineTag start=/<ul>/ end=/<\\/ul>/ contains=gabcSyllableContent
-syntax region gabcTeletypeTag start=/<tt>/ end=/<\\/tt>/ contains=gabcSyllableContent
+syntax region gabcBoldTag start=/<b>/ end=/<\/b>/ contains=gabcSyllableContent
+syntax region gabcItalicTag start=/<i>/ end=/<\/i>/ contains=gabcSyllableContent
+syntax region gabcColorTag start=/<c>/ end=/<\/c>/ contains=gabcSyllableContent
+syntax region gabcSmallCapsTag start=/<sc>/ end=/<\/sc>/ contains=gabcSyllableContent
+syntax region gabcUnderlineTag start=/<ul>/ end=/<\/ul>/ contains=gabcSyllableContent
+syntax region gabcTeletypeTag start=/<tt>/ end=/<\/tt>/ contains=gabcSyllableContent
 
 " Special control tags
-syntax region gabcClearTag start=/<clear>/ end=/<\\/clear>/ contains=gabcSyllableContent,gabcNotesRegion
-syntax region gabcElisionTag start=/<e>/ end=/<\\/e>/ contains=gabcSyllableContent
-syntax region gabcEuouaeTag start=/<eu>/ end=/<\\/eu>/ contains=gabcSyllableContent,gabcNotesRegion
-syntax region gabcNoLineBreakTag start=/<nlba>/ end=/<\\/nlba>/ contains=gabcSyllableContent,gabcNotesRegion
-syntax match gabcProtrusionTag /<pr\\(:[0-9]\\)\\?\\/\\?>/ 
+syntax region gabcClearTag start=/<clear>/ end=/<\/clear>/ contains=gabcSyllableContent,gabcNotesRegion
+syntax region gabcElisionTag start=/<e>/ end=/<\/e>/ contains=gabcSyllableContent
+syntax region gabcEuouaeTag start=/<eu>/ end=/<\/eu>/ contains=gabcSyllableContent,gabcNotesRegion
+syntax region gabcNoLineBreakTag start=/<nlba>/ end=/<\/nlba>/ contains=gabcSyllableContent,gabcNotesRegion
+syntax match gabcProtrusionTag /<pr\(:[0-9]\)\?\/\?>/ 
 
 " Other syllable tags
-syntax region gabcAboveLinesTextTag start=/<alt>/ end=/<\\/alt>/ contains=gabcSyllableContent
-syntax region gabcSpecialTag start=/<sp>/ end=/<\\/sp>/ contains=gabcSyllableContent
-syntax region gabcVerbatimTag start=/<v>/ end=/<\\/v>/ contains=gabcLatexVerbatim
+syntax region gabcAboveLinesTextTag start=/<alt>/ end=/<\/alt>/ contains=gabcSyllableContent
+syntax region gabcSpecialTag start=/<sp>/ end=/<\/sp>/ contains=gabcSyllableContent
+syntax region gabcVerbatimTag start=/<v>/ end=/<\/v>/ contains=gabcLatexVerbatim
 
 " Translation text
-syntax region gabcTranslation start=/\\[/ end=/\\]/ 
+syntax region gabcTranslation start=/\[/ end=/\]/ 
 highlight link gabcTranslation String
 
 " LaTeX verbatim content
