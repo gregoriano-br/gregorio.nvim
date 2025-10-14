@@ -42,20 +42,20 @@ gregorio.nvim/
 ### Using vim-plug
 
 ```vim
-Plug 'your-username/gregorio.nvim'
+Plug 'gregoriano-br/gregorio.nvim'
 ```
 
 ### Using packer.nvim
 
 ```lua
-use 'your-username/gregorio.nvim'
+use 'gregoriano-br/gregorio.nvim'
 ```
 
 ### Using lazy.nvim
 
 ```lua
 {
-  'your-username/gregorio.nvim',
+  'gregoriano-br/gregorio.nvim',
   ft = 'gabc',
   config = function()
     require('gabc').setup()
@@ -67,7 +67,7 @@ use 'your-username/gregorio.nvim'
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/gregorio.nvim ~/.config/nvim/pack/plugins/start/gregorio.nvim
+git clone https://github.com/gregoriano-br/gregorio.nvim ~/.config/nvim/pack/plugins/start/gregorio.nvim
 ```
 
 2. Restart Neovim or run `:PackerSync` / `:PlugInstall`
