@@ -182,7 +182,7 @@ syntax match gabcLatexVerbatim /\\\\.*/
 " Syllable content (text between tags and notes)
 " Texto de sílabas (fora das notas e dentro de tags). Só aparece no corpo
 " (gabcBody, tags etc.) e fica desativado dentro de gabcNotesRegion.
-syntax match gabcSyllableContent /[^<>()\\[\\]]\+/ contained containedin=ALLBUT,gabcNotesRegion
+syntax match gabcSyllableContent /[^<>()\\[\\]]\+/ contained containedin=ALLBUT,gabcNotesRegion,gabcFusibleNotesRegion,gabcNabcRegion
 
 " Highlight groups
 highlight link gabcNotePitch Constant
@@ -288,7 +288,7 @@ highlight link gabcSpecialTag Special
 highlight link gabcVerbatimTag String
 
 highlight link gabcLatexVerbatim String
-highlight link gabcSyllableContent Statement
+highlight link gabcSyllableContent Normal
 
 " Regions highlighting
 highlight link gabcNotesRegion Structure
