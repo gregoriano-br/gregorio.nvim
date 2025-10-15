@@ -34,11 +34,11 @@ syntax match gabcHeaderColon /:/ contained containedin=gabcHeaders nextgroup=gab
 syntax match gabcHeaderValue /\%(:\s*\)\@<=[^;]*/ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon
 syntax match gabcHeaderSemicolon /;/ contained containedin=gabcHeaders
 
-" Header highlight links
-highlight link gabcHeaderField Keyword
-highlight link gabcHeaderColon Operator
-highlight link gabcHeaderValue String
-highlight link gabcHeaderSemicolon Delimiter
+" Header highlight links (use default to avoid overriding colorschemes)
+highlight default link gabcHeaderField Keyword
+highlight default link gabcHeaderColon Operator
+highlight default link gabcHeaderValue String
+highlight default link gabcHeaderSemicolon Delimiter
 
 " Clefs inside notes region: c1..c4 | cb1..cb4 | f1..f4 with optional @ connectors
 " Restrict to whole parenthesized group so we don't match inside other note clusters
@@ -52,7 +52,45 @@ highlight link gabcClefLetter Keyword
 highlight link gabcClefNumber Number
 highlight link gabcClefConnector Operator
 
-let b:current_syntax = 'gabc'
+" Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
+syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag transparent
 
-" Syllables: any run of characters outside parentheses within notes
-syntax match gabcSyllable /[^()]\+/ containedin=gabcNotes contains=NONE
+" XML-like inline tags within syllables
+" Tag regions (opening and closing) with inner text per markup type
+syntax region gabcBoldTag      start=+<b>+   end=+</b>+   keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcBoldText
+syntax region gabcColorTag     start=+<c>+   end=+</c>+   keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcColorText
+syntax region gabcItalicTag    start=+<i>+   end=+</i>+   keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcItalicText
+syntax region gabcSmallCapsTag start=+<sc>+  end=+</sc>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcSmallCapsText
+syntax region gabcTeletypeTag  start=+<tt>+  end=+</tt>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcTeletypeText
+syntax region gabcUnderlineTag start=+<ul>+  end=+</ul>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcUnderlineText
+
+" Tag components - define in order of decreasing specificity
+" Brackets first (lowest priority for overlaps)
+syntax match gabcTagBracket /[<>]/ contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag
+" Tag names next (medium priority)  
+syntax match gabcTagName    /\%(<\|<\/\)\@<=\%(b\|c\|i\|sc\|tt\|ul\)\ze>/ contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag
+" Slash last (highest priority - defined last wins in Vim)
+syntax match gabcTagSlash   /<\@<=\// contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag
+
+" Inner text: match content between '>' of opening tag and '<' of closing tag
+" Using lookbehind/lookahead to exclude the tag delimiters from the match
+syntax match gabcBoldText      /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcBoldTag
+syntax match gabcColorText     /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcColorTag
+syntax match gabcItalicText    /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcItalicTag
+syntax match gabcSmallCapsText /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcSmallCapsTag
+syntax match gabcTeletypeText  /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcTeletypeTag
+syntax match gabcUnderlineText /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcUnderlineTag
+
+" Tag highlight links and styles
+highlight link gabcTagBracket Delimiter
+highlight link gabcTagSlash   Delimiter
+highlight link gabcTagName    Keyword
+
+highlight default gabcBoldText      term=bold cterm=bold gui=bold
+highlight default gabcItalicText    term=italic cterm=italic gui=italic
+highlight default gabcUnderlineText term=underline cterm=underline gui=underline
+highlight default link gabcTeletypeText Constant
+highlight default link gabcSmallCapsText Identifier
+highlight default link gabcColorText    Special
+
+let b:current_syntax = 'gabc'
