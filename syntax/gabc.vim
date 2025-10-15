@@ -108,20 +108,21 @@ syntax match gabcPitch /[a-npA-NP]/ contained containedin=gabcSnippet
 syntax match gabcPitchSuffix /\([A-NP]\)\@<=[012]/ contained containedin=gabcSnippet
 
 " GABC ACCIDENTALS: alter the pitch (includes pitch letter for position on staff)
-" Must be defined before other modifiers to take precedence
+" The pitch letter comes BEFORE the accidental symbol
+" Example: (ixiv) = i + x (flat on i) + i + v (virga)
 
-" Accidentals with parentheses: x?, #?, y? followed by pitch
+" Accidentals with parentheses: pitch followed by x?, #?, y?
 " Parentheses indicate cautionary/editorial accidentals
-syntax match gabcAccidental /[x#y]?[a-npA-NP]/ contained containedin=gabcSnippet
+syntax match gabcAccidental /[a-npA-NP][x#y]?/ contained containedin=gabcSnippet
 
-" Double sharp: ## followed by pitch (soft sharp)
-syntax match gabcAccidental /##[a-npA-NP]/ contained containedin=gabcSnippet
+" Double sharp: pitch followed by ## (soft sharp)
+syntax match gabcAccidental /[a-npA-NP]##/ contained containedin=gabcSnippet
 
-" Soft natural: Y followed by pitch
-syntax match gabcAccidental /Y[a-npA-NP]/ contained containedin=gabcSnippet
+" Soft natural: pitch followed by Y
+syntax match gabcAccidental /[a-npA-NP]Y/ contained containedin=gabcSnippet
 
-" Basic accidentals: x (flat), # (sharp), y (natural) followed by pitch
-syntax match gabcAccidental /[x#y][a-npA-NP]/ contained containedin=gabcSnippet
+" Basic accidentals: pitch followed by x (flat), # (sharp), y (natural)
+syntax match gabcAccidental /[a-npA-NP][x#y]/ contained containedin=gabcSnippet
 
 " GABC PITCH MODIFIERS: symbols that modify note appearance/meaning
 
