@@ -114,6 +114,6 @@ call writefile([
       \ 'PLAIN_STACK=' . string(s:plain_stack),
       \ 'LINE10=' . s:line10,
       \ 'LINE14=' . s:line14,
-      \ ], 'scripts/smoke_gabc_newtags.out')
+      \ ], 'tests/smoke_gabc_newtags.out')
 
 qall!

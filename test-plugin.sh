@@ -114,12 +114,12 @@ if command -v nvim >/dev/null 2>&1; then
 
     echo ""
     echo "Running markup smoke test (bold/italic) with watchdog…"
-    rm -f scripts/smoke_gabc_markup.out
-    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S scripts/smoke_gabc_markup.vim 2>/dev/null || true
-    if [ -f scripts/smoke_gabc_markup.out ]; then
-        cat scripts/smoke_gabc_markup.out | sed -n '1,10p'
+    rm -f tests/smoke_gabc_markup.out
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_markup.vim 2>/dev/null || true
+    if [ -f tests/smoke_gabc_markup.out ]; then
+        cat tests/smoke_gabc_markup.out | sed -n '1,10p'
     fi
-    if grep -q "BOLD-GROUP=gabcBoldText" scripts/smoke_gabc_markup.out && grep -q "ITALIC-GROUP=gabcItalicText" scripts/smoke_gabc_markup.out; then
+    if grep -q "BOLD-GROUP=gabcBoldText" tests/smoke_gabc_markup.out && grep -q "ITALIC-GROUP=gabcItalicText" tests/smoke_gabc_markup.out; then
         echo "✓ Markup smoke test passed"
     else
         echo "! Markup smoke test may have failed"
@@ -127,17 +127,17 @@ if command -v nvim >/dev/null 2>&1; then
 
     echo ""
     echo "Running new tags smoke test with watchdog…"
-    rm -f scripts/smoke_gabc_newtags.out
-    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S scripts/smoke_gabc_newtags.vim 2>/dev/null || true
-    if [ -f scripts/smoke_gabc_newtags.out ]; then
-        cat scripts/smoke_gabc_newtags.out | sed -n '1,10p'
+    rm -f tests/smoke_gabc_newtags.out
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_newtags.vim 2>/dev/null || true
+    if [ -f tests/smoke_gabc_newtags.out ]; then
+        cat tests/smoke_gabc_newtags.out | sed -n '1,10p'
     fi
     # Check for expected groups and ensure no leakage of gabcProtrusionTag
-    if grep -q "ELISION_TEXT=gabcElisionText" scripts/smoke_gabc_newtags.out && \
-       grep -q "ALT_TEXT=gabcAboveLinesText" scripts/smoke_gabc_newtags.out && \
-       grep -q "PR0_COLON=gabcProtrusionColon" scripts/smoke_gabc_newtags.out && \
-       grep -q "PR1_AFTER_STACK=\['gabcSyllable'\]" scripts/smoke_gabc_newtags.out && \
-       ! grep -q "gabcProtrusionTag.*PR1_AFTER" scripts/smoke_gabc_newtags.out; then
+    if grep -q "ELISION_TEXT=gabcElisionText" tests/smoke_gabc_newtags.out && \
+       grep -q "ALT_TEXT=gabcAboveLinesText" tests/smoke_gabc_newtags.out && \
+       grep -q "PR0_COLON=gabcProtrusionColon" tests/smoke_gabc_newtags.out && \
+       grep -q "PR1_AFTER_STACK=\['gabcSyllable'\]" tests/smoke_gabc_newtags.out && \
+       ! grep -q "gabcProtrusionTag.*PR1_AFTER" tests/smoke_gabc_newtags.out; then
         echo "✓ New tags smoke test passed (no protrusion tag leakage)"
     else
         echo "! New tags smoke test may have failed"
@@ -145,15 +145,15 @@ if command -v nvim >/dev/null 2>&1; then
 
     echo ""
     echo "Running LaTeX embedding smoke test with watchdog…"
-    rm -f scripts/smoke_gabc_latex.out
-    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S scripts/smoke_gabc_latex.vim 2>/dev/null || true
-    if [ -f scripts/smoke_gabc_latex.out ]; then
-        cat scripts/smoke_gabc_latex.out | sed -n '1,10p'
+    rm -f tests/smoke_gabc_latex.out
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_latex.vim 2>/dev/null || true
+    if [ -f tests/smoke_gabc_latex.out ]; then
+        cat tests/smoke_gabc_latex.out | sed -n '1,10p'
     fi
     # Check if LaTeX syntax is recognized inside <v> tags
-    if grep -q "TEST_LATEX=PASS" scripts/smoke_gabc_latex.out && \
-       grep -q "IN_VERBATIM=PASS" scripts/smoke_gabc_latex.out && \
-       grep -q "NO_LEAK=PASS" scripts/smoke_gabc_latex.out; then
+    if grep -q "TEST_LATEX=PASS" tests/smoke_gabc_latex.out && \
+       grep -q "IN_VERBATIM=PASS" tests/smoke_gabc_latex.out && \
+       grep -q "NO_LEAK=PASS" tests/smoke_gabc_latex.out; then
         echo "✓ LaTeX embedding smoke test passed"
     else
         echo "! LaTeX embedding smoke test may have failed"
