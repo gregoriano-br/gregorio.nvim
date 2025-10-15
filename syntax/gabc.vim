@@ -67,8 +67,16 @@ highlight link gabcClefLetter Keyword
 highlight link gabcClefNumber Number
 highlight link gabcClefConnector Operator
 
+" Lyric centering delimiters: {...} for centering a group of letters
+" Must be defined before gabcSyllable to take precedence
+syntax region gabcLyricCentering matchgroup=gabcLyricCenteringDelim start=/{/ end=/}/ keepend oneline containedin=gabcNotes
+
+" Translation delimiters: [...] for alternative translation text
+" Must be defined before gabcSyllable and appear before () in syllables
+syntax region gabcTranslation matchgroup=gabcTranslationDelim start=/\[/ end=/\]/ keepend oneline containedin=gabcNotes
+
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
-syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag transparent
+syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
 
 " XML-like inline tags within syllables
 " Tag regions (opening and closing) with inner text per markup type
@@ -143,5 +151,13 @@ highlight link gabcProtrusionNumber Number
 
 " Verbatim tag delimiter highlight
 highlight link gabcVerbatimDelim Delimiter
+
+" Lyric centering delimiters and text
+highlight link gabcLyricCenteringDelim Delimiter
+highlight default link gabcLyricCentering Special
+
+" Translation delimiters and text
+highlight link gabcTranslationDelim Delimiter
+highlight default link gabcTranslation String
 
 let b:current_syntax = 'gabc'
