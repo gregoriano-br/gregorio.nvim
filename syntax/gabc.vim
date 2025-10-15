@@ -53,3 +53,6 @@ highlight link gabcClefNumber Number
 highlight link gabcClefConnector Operator
 
 let b:current_syntax = 'gabc'
+
+" Syllables: any run of characters outside parentheses within notes
+syntax match gabcSyllable /[^()]\+/ containedin=gabcNotes contains=NONE
