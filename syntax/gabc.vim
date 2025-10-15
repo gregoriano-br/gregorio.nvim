@@ -77,9 +77,15 @@ syntax region gabcTranslation matchgroup=gabcTranslationDelim start=/\[/ end=/\]
 
 " Musical notation: (...) contains alternating GABC and NABC snippets separated by |
 " Structure: (gabc1|nabc1|gabc2|nabc2|...)
-syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepend oneline containedin=gabcNotes contains=gabcSnippetDelim transparent
+syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepend oneline containedin=gabcNotes contains=gabcSnippet transparent
+
+" GABC snippet: First snippet after ( up to | or )
+" This is a container for future GABC-specific notation elements  
+" Use a simpler pattern: match everything that's not | or )
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
+" Must be defined after gabcSnippet to not interfere with it
 syntax match gabcSnippetDelim /|/ contained containedin=gabcNotation
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
