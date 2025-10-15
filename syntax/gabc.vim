@@ -82,7 +82,7 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " GABC snippet: First snippet after ( up to | or )
 " This is a container for future GABC-specific notation elements  
 " Use a simpler pattern: match everything that's not | or )
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcPitch,gabcPitchSuffix transparent
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -106,6 +106,56 @@ syntax match gabcPitch /[a-npA-NP]/ contained containedin=gabcSnippet
 " 2: no-leaning (unison/same pitch)
 " Pattern matches the digit immediately after an uppercase pitch letter
 syntax match gabcPitchSuffix /\([A-NP]\)\@<=[012]/ contained containedin=gabcSnippet
+
+" GABC ACCIDENTALS: alter the pitch (includes pitch letter for position on staff)
+" Must be defined before other modifiers to take precedence
+
+" Accidentals with parentheses: x?, #?, y? followed by pitch
+" Parentheses indicate cautionary/editorial accidentals
+syntax match gabcAccidental /[x#y]?[a-npA-NP]/ contained containedin=gabcSnippet
+
+" Double sharp: ## followed by pitch (soft sharp)
+syntax match gabcAccidental /##[a-npA-NP]/ contained containedin=gabcSnippet
+
+" Soft natural: Y followed by pitch
+syntax match gabcAccidental /Y[a-npA-NP]/ contained containedin=gabcSnippet
+
+" Basic accidentals: x (flat), # (sharp), y (natural) followed by pitch
+syntax match gabcAccidental /[x#y][a-npA-NP]/ contained containedin=gabcSnippet
+
+" GABC PITCH MODIFIERS: symbols that modify note appearance/meaning
+
+" Initio debilis: - before pitch (weakened start)
+" Uses positive lookahead to match only when followed by a valid pitch
+syntax match gabcInitioDebilis /-\([a-npA-NP]\)\@=/ contained containedin=gabcSnippet
+
+" Oriscus modifiers: o (oriscus), O (oriscus scapus)
+" Can be followed by optional suffix 0 or 1
+syntax match gabcOriscus /[oO]/ contained containedin=gabcSnippet
+
+" Oriscus suffix: 0 or 1 after o or O
+syntax match gabcOriscusSuffix /\([oO]\)\@<=[01]/ contained containedin=gabcSnippet
+
+" Simple single-character modifiers (after pitch)
+" q: quadratum, w: quilisma, W: quilisma quadratum
+" v: virga (stem right), V: virga (stem left)
+" s: stropha, ~: liquescent deminutus
+" <: augmented liquescent, >: diminished liquescent
+" =: linea, r: punctum cavum, R: punctum quadratum surrounded by lines
+" NOTE: These are defined BEFORE compound modifiers so compounds take precedence
+syntax match gabcModifierSimple /[qwWvVs~<>=rR]/ contained containedin=gabcSnippet
+
+" Punctum cavum surrounded by lines: r0
+" Must be defined after simple 'r' so it takes precedence
+syntax match gabcModifierSpecial /r0/ contained containedin=gabcSnippet
+
+" Compound modifiers: multi-character sequences
+" MUST be defined AFTER simple modifiers to take precedence in Vim syntax matching
+" Order matters: longer patterns last to take highest precedence
+syntax match gabcModifierCompound /vv/ contained containedin=gabcSnippet   " bivirga
+syntax match gabcModifierCompound /ss/ contained containedin=gabcSnippet   " distropha
+syntax match gabcModifierCompound /vvv/ contained containedin=gabcSnippet  " trivirga
+syntax match gabcModifierCompound /sss/ contained containedin=gabcSnippet  " tristropha
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
 syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
@@ -197,10 +247,21 @@ highlight link gabcNotationDelim Delimiter
 highlight link gabcSnippetDelim Operator
 
 " GABC pitches: note letters that specify pitch height
-highlight link gabcPitch Identifier
+highlight link gabcPitch Character
 
 " GABC pitch inclinatum suffix: direction indicator (0=left, 1=right, 2=none)
 highlight link gabcPitchSuffix Number
+
+" GABC pitch modifiers: symbols that modify the appearance/meaning of pitches
+highlight link gabcInitioDebilis Identifier
+highlight link gabcOriscus Identifier
+highlight link gabcOriscusSuffix Number
+highlight link gabcModifierSimple Identifier
+highlight link gabcModifierCompound Identifier
+highlight link gabcModifierSpecial Identifier
+
+" GABC accidentals: symbols indicating pitch alteration (includes pitch letter for position)
+highlight link gabcAccidental Function
 
 " GABC and NABC snippet containers (transparent - no direct highlighting)
 " These will contain future specific notation syntax

@@ -197,6 +197,21 @@ if command -v nvim >/dev/null 2>&1; then
     else
         echo "! GABC pitch suffix syntax smoke test may have failed"
     fi
+
+    echo ""
+    echo "Running GABC pitch modifiers and accidentals syntax smoke test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>/dev/null | grep -E "(PASS|FAIL|HIGHLIGHT)" || true
+    # Check if pitch modifiers and accidentals are recognized correctly
+    if timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_INITIO_DEBILIS=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_ORISCUS=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_BIVIRGA=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_TRIVIRGA=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_FLAT=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_SOFT_SHARP=PASS"; then
+        echo "✓ GABC pitch modifiers and accidentals syntax smoke test passed"
+    else
+        echo "! GABC pitch modifiers and accidentals syntax smoke test may have failed"
+    fi
 else
     echo "! Neovim not found; skipping headless smoke test"
 fi
