@@ -75,6 +75,13 @@ syntax region gabcLyricCentering matchgroup=gabcLyricCenteringDelim start=/{/ en
 " Must be defined before gabcSyllable and appear before () in syllables
 syntax region gabcTranslation matchgroup=gabcTranslationDelim start=/\[/ end=/\]/ keepend oneline containedin=gabcNotes
 
+" Musical notation: (...) contains alternating GABC and NABC snippets separated by |
+" Structure: (gabc1|nabc1|gabc2|nabc2|...)
+syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepend oneline containedin=gabcNotes contains=gabcSnippetDelim transparent
+
+" Snippet delimiter: | separates GABC and NABC snippets
+syntax match gabcSnippetDelim /|/ contained containedin=gabcNotation
+
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
 syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
 
@@ -159,5 +166,12 @@ highlight default link gabcLyricCentering Special
 " Translation delimiters and text
 highlight link gabcTranslationDelim Delimiter
 highlight default link gabcTranslation String
+
+" Musical notation delimiters
+highlight link gabcNotationDelim Delimiter
+highlight link gabcSnippetDelim Operator
+
+" GABC and NABC snippet containers (transparent - no direct highlighting)
+" These will contain future specific notation syntax
 
 let b:current_syntax = 'gabc'
