@@ -5,6 +5,21 @@ if exists('b:current_syntax') && !exists('g:gabc_devmode')
 	finish
 endif
 
+" Include LaTeX syntax for embedded LaTeX in <v> tags
+" Save current syntax state
+let s:current_syntax_save = exists('b:current_syntax') ? b:current_syntax : ''
+unlet! b:current_syntax
+
+" Try to load tex syntax
+try
+	syntax include @texSyntax $VIMRUNTIME/syntax/tex.vim
+catch
+	" If tex.vim is not available, create an empty cluster
+	syntax cluster texSyntax
+endtry
+
+" Don't restore b:current_syntax yet - let it stay unset until end of file
+
 " 1) Section separator: a line that is exactly '%%' (must come before comment)
 syntax match gabcSectionSeparator /^%%$/ nextgroup=gabcNotes skipnl skipwhite
 " Dedicated one-line region covering only the separator line, to avoid inclusion in notes
@@ -72,7 +87,8 @@ syntax region gabcNoLineBreakTag    start=+<nlba>+   end=+</nlba>+   keepend tra
 syntax region gabcProtrusionTag     start=+<pr\%(:[.0-9]\+\)\?>+ end=+</pr>+ keepend oneline transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcProtrusionTagName
 syntax region gabcAboveLinesTextTag start=+<alt>+    end=+</alt>+    keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcAboveLinesText
 syntax region gabcSpecialTag        start=+<sp>+     end=+</sp>+     keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcSpecialText
-syntax region gabcVerbatimTag       start=+<v>+      end=+</v>+      keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName
+" Verbatim tag with embedded LaTeX: matchgroup separates delimiters from content
+syntax region gabcVerbatimTag matchgroup=gabcVerbatimDelim start=+<v>+ end=+</v>+ keepend containedin=gabcNotes contains=@texSyntax,gabcVerbatimText
 
 " Tag components - define in order of decreasing specificity
 " Brackets first (lowest priority for overlaps)
@@ -101,6 +117,7 @@ syntax match gabcUnderlineText /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=g
 syntax match gabcElisionText      /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcElisionTag
 syntax match gabcAboveLinesText   /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcAboveLinesTextTag
 syntax match gabcSpecialText      /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcSpecialTag
+" Note: gabcVerbatimText is not needed - LaTeX syntax is included directly in gabcVerbatimTag via @texSyntax
 
 " Tag highlight links and styles
 highlight link gabcTagBracket Delimiter
@@ -123,5 +140,8 @@ highlight default link gabcSpecialText Special
 highlight link gabcProtrusionTagName Keyword
 highlight link gabcProtrusionColon Operator
 highlight link gabcProtrusionNumber Number
+
+" Verbatim tag delimiter highlight
+highlight link gabcVerbatimDelim Delimiter
 
 let b:current_syntax = 'gabc'

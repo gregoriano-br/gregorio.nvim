@@ -142,6 +142,22 @@ if command -v nvim >/dev/null 2>&1; then
     else
         echo "! New tags smoke test may have failed"
     fi
+
+    echo ""
+    echo "Running LaTeX embedding smoke test with watchdog…"
+    rm -f scripts/smoke_gabc_latex.out
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S scripts/smoke_gabc_latex.vim 2>/dev/null || true
+    if [ -f scripts/smoke_gabc_latex.out ]; then
+        cat scripts/smoke_gabc_latex.out | sed -n '1,10p'
+    fi
+    # Check if LaTeX syntax is recognized inside <v> tags
+    if grep -q "TEST_LATEX=PASS" scripts/smoke_gabc_latex.out && \
+       grep -q "IN_VERBATIM=PASS" scripts/smoke_gabc_latex.out && \
+       grep -q "NO_LEAK=PASS" scripts/smoke_gabc_latex.out; then
+        echo "✓ LaTeX embedding smoke test passed"
+    else
+        echo "! LaTeX embedding smoke test may have failed"
+    fi
 else
     echo "! Neovim not found; skipping headless smoke test"
 fi
