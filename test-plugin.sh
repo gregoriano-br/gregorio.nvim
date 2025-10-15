@@ -212,6 +212,19 @@ if command -v nvim >/dev/null 2>&1; then
     else
         echo "! GABC pitch modifiers and accidentals syntax smoke test may have failed"
     fi
+
+    echo ""
+    echo "Running GABC accidental order validation test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>/dev/null | grep -E "(PASS|FAIL)" || true
+    # Check if accidentals are correctly ordered (pitch BEFORE accidental symbol)
+    if timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>&1 | grep -q "ACCIDENTAL_IX=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>&1 | grep -q "PITCH_I=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>&1 | grep -q "MODIFIER_V=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>&1 | grep -q "ACCIDENTAL_GX=PASS"; then
+        echo "✓ GABC accidental order validation test passed"
+    else
+        echo "! GABC accidental order validation test may have failed"
+    fi
 else
     echo "! Neovim not found; skipping headless smoke test"
 fi
