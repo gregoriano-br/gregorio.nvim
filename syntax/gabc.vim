@@ -40,4 +40,16 @@ highlight link gabcHeaderColon Operator
 highlight link gabcHeaderValue String
 highlight link gabcHeaderSemicolon Delimiter
 
+" Clefs inside notes region: c1..c4 | cb1..cb4 | f1..f4 with optional @ connectors
+" Restrict to whole parenthesized group so we don't match inside other note clusters
+syntax match gabcClef /(\%(cb\|[cf]\)[1-4]\%(@\%(cb\|[cf]\)[1-4]\)*)/ containedin=gabcNotes contains=gabcClefLetter,gabcClefNumber,gabcClefConnector
+syntax match gabcClefLetter /\(cb\|[cf]\)/ contained containedin=gabcClef
+syntax match gabcClefNumber /[1-4]/ contained containedin=gabcClef
+syntax match gabcClefConnector /@/ contained containedin=gabcClef
+
+" Clef highlight links
+highlight link gabcClefLetter Keyword
+highlight link gabcClefNumber Number
+highlight link gabcClefConnector Operator
+
 let b:current_syntax = 'gabc'
