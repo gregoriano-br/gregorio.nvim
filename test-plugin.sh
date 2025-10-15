@@ -158,6 +158,18 @@ if command -v nvim >/dev/null 2>&1; then
     else
         echo "! LaTeX embedding smoke test may have failed"
     fi
+
+    echo ""
+    echo "Running NABC snippet alternation smoke test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_nabc_snippet.vim 2>/dev/null | grep -E "(PASS|FAIL)" || true
+    # Check if both GABC and NABC snippets are recognized correctly
+    if timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_nabc_snippet.vim 2>&1 | grep -q "HAS_GABC_SIMPLE=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_nabc_snippet.vim 2>&1 | grep -q "HAS_NABC_SIMPLE=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_nabc_snippet.vim 2>&1 | grep -q "HAS_NABC_QUAD_3=PASS"; then
+        echo "✓ NABC snippet alternation smoke test passed"
+    else
+        echo "! NABC snippet alternation smoke test may have failed"
+    fi
 else
     echo "! Neovim not found; skipping headless smoke test"
 fi

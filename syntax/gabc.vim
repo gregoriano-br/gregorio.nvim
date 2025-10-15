@@ -77,7 +77,7 @@ syntax region gabcTranslation matchgroup=gabcTranslationDelim start=/\[/ end=/\]
 
 " Musical notation: (...) contains alternating GABC and NABC snippets separated by |
 " Structure: (gabc1|nabc1|gabc2|nabc2|...)
-syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepend oneline containedin=gabcNotes contains=gabcSnippet transparent
+syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepend oneline containedin=gabcNotes contains=gabcSnippet,nabcSnippet transparent
 
 " GABC snippet: First snippet after ( up to | or )
 " This is a container for future GABC-specific notation elements  
@@ -87,6 +87,11 @@ syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation trans
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
 syntax match gabcSnippetDelim /|/ contained containedin=gabcNotation
+
+" NABC snippet: Snippets after | delimiter up to next | or )
+" This is a container for future NABC-specific notation elements
+" Pattern matches after | up to next | or ) boundary
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation transparent
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
 syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
