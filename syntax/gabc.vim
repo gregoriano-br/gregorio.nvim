@@ -27,4 +27,17 @@ syntax region gabcNotes  start=/^/ end=/\%$/ keepend contained
 highlight link gabcSectionSeparator Special
 highlight link gabcComment Comment
 
+" Header pairs inside gabcHeaders: HEADER:VALUE;
+" - Field (before colon), Colon, Value (until semicolon), Semicolon
+syntax match gabcHeaderField /^\s*[^%:][^:]*\ze:/ containedin=gabcHeaders nextgroup=gabcHeaderColon
+syntax match gabcHeaderColon /:/ contained containedin=gabcHeaders nextgroup=gabcHeaderValue skipwhite
+syntax match gabcHeaderValue /\%(:\s*\)\@<=[^;]*/ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon
+syntax match gabcHeaderSemicolon /;/ contained containedin=gabcHeaders
+
+" Header highlight links
+highlight link gabcHeaderField Keyword
+highlight link gabcHeaderColon Operator
+highlight link gabcHeaderValue String
+highlight link gabcHeaderSemicolon Delimiter
+
 let b:current_syntax = 'gabc'
