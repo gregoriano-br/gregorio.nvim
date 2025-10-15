@@ -82,7 +82,7 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " GABC snippet: First snippet after ( up to | or )
 " This is a container for future GABC-specific notation elements  
 " Use a simpler pattern: match everything that's not | or )
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation transparent
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcPitch transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -92,6 +92,13 @@ syntax match gabcSnippetDelim /|/ contained containedin=gabcNotation
 " This is a container for future NABC-specific notation elements
 " Pattern matches after | up to next | or ) boundary
 syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation transparent
+
+" GABC pitches: a-p (excluding 'o'), both lowercase (punctum quadratum) and uppercase (punctum inclinatum)
+" Lowercase: a b c d e f g h i j k l m n p (punctum quadratum - square note)
+" Uppercase: A B C D E F G H I J K L M N P (punctum inclinatum - inclined note)
+" Note: 'o' and 'O' are excluded as they are not valid pitch letters in GABC
+" Character class approach: [a-np] gets a-n and p, [A-NP] gets A-N and P
+syntax match gabcPitch /[a-npA-NP]/ contained containedin=gabcSnippet
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
 syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
@@ -181,6 +188,9 @@ highlight default link gabcTranslation String
 " Musical notation delimiters
 highlight link gabcNotationDelim Delimiter
 highlight link gabcSnippetDelim Operator
+
+" GABC pitches: note letters that specify pitch height
+highlight link gabcPitch Identifier
 
 " GABC and NABC snippet containers (transparent - no direct highlighting)
 " These will contain future specific notation syntax

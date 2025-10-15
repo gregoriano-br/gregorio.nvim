@@ -170,6 +170,20 @@ if command -v nvim >/dev/null 2>&1; then
     else
         echo "! NABC snippet alternation smoke test may have failed"
     fi
+
+    echo ""
+    echo "Running GABC pitch syntax smoke test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>/dev/null | grep -E "(PASS|FAIL|HIGHLIGHT)" || true
+    # Check if pitch letters are recognized correctly
+    if timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "HAS_PITCH_A=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "HAS_PITCH_P=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "HAS_PITCH_A_UPPER=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "HAS_PITCH_P_UPPER=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "IN_SNIPPET=PASS"; then
+        echo "✓ GABC pitch syntax smoke test passed"
+    else
+        echo "! GABC pitch syntax smoke test may have failed"
+    fi
 else
     echo "! Neovim not found; skipping headless smoke test"
 fi
