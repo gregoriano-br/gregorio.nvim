@@ -53,7 +53,7 @@ highlight link gabcClefNumber Number
 highlight link gabcClefConnector Operator
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
-syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag transparent
+syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag transparent
 
 " XML-like inline tags within syllables
 " Tag regions (opening and closing) with inner text per markup type
@@ -64,13 +64,29 @@ syntax region gabcSmallCapsTag start=+<sc>+  end=+</sc>+  keepend transparent co
 syntax region gabcTeletypeTag  start=+<tt>+  end=+</tt>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcTeletypeText
 syntax region gabcUnderlineTag start=+<ul>+  end=+</ul>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcUnderlineText
 
+" Additional GABC-specific tags
+syntax region gabcClearTag          start=+<clear>+  end=+</clear>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName
+syntax region gabcElisionTag        start=+<e>+      end=+</e>+      keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcElisionText
+syntax region gabcEuouaeTag         start=+<eu>+     end=+</eu>+     keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName
+syntax region gabcNoLineBreakTag    start=+<nlba>+   end=+</nlba>+   keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName
+syntax region gabcProtrusionTag     start=+<pr\%(:[.0-9]\+\)\?>+ end=+</pr>+ keepend oneline transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcProtrusionTagName
+syntax region gabcAboveLinesTextTag start=+<alt>+    end=+</alt>+    keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcAboveLinesText
+syntax region gabcSpecialTag        start=+<sp>+     end=+</sp>+     keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcSpecialText
+syntax region gabcVerbatimTag       start=+<v>+      end=+</v>+      keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName
+
 " Tag components - define in order of decreasing specificity
 " Brackets first (lowest priority for overlaps)
 syntax match gabcTagBracket /[<>]/ contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag
 " Tag names next (medium priority)  
-syntax match gabcTagName    /\%(<\|<\/\)\@<=\%(b\|c\|i\|sc\|tt\|ul\)\ze>/ contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag
+syntax match gabcTagName    /\%(<\|<\/\)\@<=\%(b\|c\|i\|sc\|tt\|ul\|clear\|e\|eu\|nlba\|alt\|sp\|v\)\ze>/ contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag
+" Protrusion tag name (without colon/number - those are handled separately)
+syntax match gabcProtrusionTagName /<\@<=pr/ contained containedin=gabcProtrusionTag
 " Slash last (highest priority - defined last wins in Vim)
 syntax match gabcTagSlash   /<\@<=\// contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag
+
+" Protrusion tag components (define after general tag components for specificity)
+syntax match gabcProtrusionColon  /:/ contained containedin=gabcProtrusionTag
+syntax match gabcProtrusionNumber /[.0-9]\+/ contained containedin=gabcProtrusionTag
 
 " Inner text: match content between '>' of opening tag and '<' of closing tag
 " Using lookbehind/lookahead to exclude the tag delimiters from the match
@@ -80,6 +96,11 @@ syntax match gabcItalicText    /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=g
 syntax match gabcSmallCapsText /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcSmallCapsTag
 syntax match gabcTeletypeText  /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcTeletypeTag
 syntax match gabcUnderlineText /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcUnderlineTag
+
+" Inner text for additional tags
+syntax match gabcElisionText      /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcElisionTag
+syntax match gabcAboveLinesText   /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcAboveLinesTextTag
+syntax match gabcSpecialText      /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcSpecialTag
 
 " Tag highlight links and styles
 highlight link gabcTagBracket Delimiter
@@ -92,5 +113,15 @@ highlight default gabcUnderlineText term=underline cterm=underline gui=underline
 highlight default link gabcTeletypeText Constant
 highlight default link gabcSmallCapsText Identifier
 highlight default link gabcColorText    Special
+
+" Additional tag text styles
+highlight default gabcElisionText    term=italic cterm=italic gui=italic
+highlight default link gabcAboveLinesText String
+highlight default link gabcSpecialText Special
+
+" Protrusion tag component highlights
+highlight link gabcProtrusionTagName Keyword
+highlight link gabcProtrusionColon Operator
+highlight link gabcProtrusionNumber Number
 
 let b:current_syntax = 'gabc'

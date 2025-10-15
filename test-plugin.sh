@@ -111,6 +111,37 @@ if command -v nvim >/dev/null 2>&1; then
     else
         echo "! Headless smoke test failed (rc=$rc)"
     fi
+
+    echo ""
+    echo "Running markup smoke test (bold/italic) with watchdog…"
+    rm -f scripts/smoke_gabc_markup.out
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S scripts/smoke_gabc_markup.vim 2>/dev/null || true
+    if [ -f scripts/smoke_gabc_markup.out ]; then
+        cat scripts/smoke_gabc_markup.out | sed -n '1,10p'
+    fi
+    if grep -q "BOLD-GROUP=gabcBoldText" scripts/smoke_gabc_markup.out && grep -q "ITALIC-GROUP=gabcItalicText" scripts/smoke_gabc_markup.out; then
+        echo "✓ Markup smoke test passed"
+    else
+        echo "! Markup smoke test may have failed"
+    fi
+
+    echo ""
+    echo "Running new tags smoke test with watchdog…"
+    rm -f scripts/smoke_gabc_newtags.out
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S scripts/smoke_gabc_newtags.vim 2>/dev/null || true
+    if [ -f scripts/smoke_gabc_newtags.out ]; then
+        cat scripts/smoke_gabc_newtags.out | sed -n '1,10p'
+    fi
+    # Check for expected groups and ensure no leakage of gabcProtrusionTag
+    if grep -q "ELISION_TEXT=gabcElisionText" scripts/smoke_gabc_newtags.out && \
+       grep -q "ALT_TEXT=gabcAboveLinesText" scripts/smoke_gabc_newtags.out && \
+       grep -q "PR0_COLON=gabcProtrusionColon" scripts/smoke_gabc_newtags.out && \
+       grep -q "PR1_AFTER_STACK=\['gabcSyllable'\]" scripts/smoke_gabc_newtags.out && \
+       ! grep -q "gabcProtrusionTag.*PR1_AFTER" scripts/smoke_gabc_newtags.out; then
+        echo "✓ New tags smoke test passed (no protrusion tag leakage)"
+    else
+        echo "! New tags smoke test may have failed"
+    fi
 else
     echo "! Neovim not found; skipping headless smoke test"
 fi
