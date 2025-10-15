@@ -184,6 +184,19 @@ if command -v nvim >/dev/null 2>&1; then
     else
         echo "! GABC pitch syntax smoke test may have failed"
     fi
+
+    echo ""
+    echo "Running GABC pitch suffix syntax smoke test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>/dev/null | grep -E "(PASS|FAIL|HIGHLIGHT)" || true
+    # Check if pitch inclinatum suffixes (0, 1, 2) are recognized correctly
+    if timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>&1 | grep -q "HAS_SUFFIX_0=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>&1 | grep -q "HAS_SUFFIX_1=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>&1 | grep -q "HAS_SUFFIX_2=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>&1 | grep -q "LOWERCASE_NO_SUFFIX=PASS"; then
+        echo "✓ GABC pitch suffix syntax smoke test passed"
+    else
+        echo "! GABC pitch suffix syntax smoke test may have failed"
+    fi
 else
     echo "! Neovim not found; skipping headless smoke test"
 fi

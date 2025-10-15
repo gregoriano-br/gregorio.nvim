@@ -82,7 +82,7 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " GABC snippet: First snippet after ( up to | or )
 " This is a container for future GABC-specific notation elements  
 " Use a simpler pattern: match everything that's not | or )
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcPitch transparent
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcPitch,gabcPitchSuffix transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -99,6 +99,13 @@ syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation trans
 " Note: 'o' and 'O' are excluded as they are not valid pitch letters in GABC
 " Character class approach: [a-np] gets a-n and p, [A-NP] gets A-N and P
 syntax match gabcPitch /[a-npA-NP]/ contained containedin=gabcSnippet
+
+" Pitch inclinatum suffix: optional 0, 1, or 2 after uppercase pitches (A-NP)
+" 0: left-leaning (descending interval)
+" 1: right-leaning (ascending interval)
+" 2: no-leaning (unison/same pitch)
+" Pattern matches the digit immediately after an uppercase pitch letter
+syntax match gabcPitchSuffix /\([A-NP]\)\@<=[012]/ contained containedin=gabcSnippet
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
 syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
@@ -191,6 +198,9 @@ highlight link gabcSnippetDelim Operator
 
 " GABC pitches: note letters that specify pitch height
 highlight link gabcPitch Identifier
+
+" GABC pitch inclinatum suffix: direction indicator (0=left, 1=right, 2=none)
+highlight link gabcPitchSuffix Number
 
 " GABC and NABC snippet containers (transparent - no direct highlighting)
 " These will contain future specific notation syntax
