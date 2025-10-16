@@ -82,7 +82,7 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " GABC snippet: First snippet after ( up to | or )
 " This is a container for future GABC-specific notation elements  
 " Use a simpler pattern: match everything that's not | or )
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcFusionCollective,gabcFusionConnector transparent
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -170,6 +170,27 @@ syntax region gabcFusionCollective matchgroup=gabcFusionFunction start=/@\[/ end
 " Individual pitch fusion connector: @ between pitches (not before bracket)
 " Uses negative lookahead to avoid matching @[ (which is collective fusion)
 syntax match gabcFusionConnector /@\(\[\)\@!/ contained containedin=gabcSnippet
+
+" GABC NEUME SPACING: operators for controlling space between neumes
+" Simplified implementation: / is an operator, [...] is a suffix with brackets and number
+" CRITICAL: In Vim, LAST defined pattern wins for overlapping matches
+
+" Fixed spacing operators
+" Define simple / FIRST, then override with more specific patterns
+syntax match gabcSpacingSmall /\// contained containedin=gabcSnippet       " / = small separation
+syntax match gabcSpacingHalf /\/0/ contained containedin=gabcSnippet       " /0 = half space (same neume) - overrides /
+syntax match gabcSpacingSingle /\/!/ contained containedin=gabcSnippet     " /! = small separation (same neume) - overrides /
+syntax match gabcSpacingDouble /\/\// contained containedin=gabcSnippet    " // = medium separation - overrides / (defined LAST!)
+
+" Spacing suffix: [...] after / for scaled spacing
+" Brackets act as delimiters, number inside is the scaling factor
+syntax match gabcSpacingBracket /\[/ contained containedin=gabcSnippet     " [ delimiter for spacing factor
+syntax match gabcSpacingBracket /\]/ contained containedin=gabcSnippet     " ] delimiter for spacing factor
+syntax match gabcSpacingFactor /\(\[\)\@<=-\?\d\+\(\.\d\+\)\?/ contained containedin=gabcSnippet  " numeric factor AFTER [ (positive lookbehind)
+
+" Zero-width space: ! (when alone or followed by space for non-breaking)
+" Must come AFTER /! to not interfere
+syntax match gabcSpacingZero /!/ contained containedin=gabcSnippet
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
 syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
@@ -280,6 +301,15 @@ highlight link gabcAccidental Function
 " GABC neume fusions: @ connector for fusing notes into single neume
 highlight link gabcFusionConnector Operator
 highlight link gabcFusionFunction Function
+
+" GABC neume spacing: operators for controlling space between neumes
+highlight link gabcSpacingDouble Operator
+highlight link gabcSpacingSingle Operator
+highlight link gabcSpacingHalf Operator
+highlight link gabcSpacingSmall Operator
+highlight link gabcSpacingZero Operator
+highlight link gabcSpacingBracket Delimiter
+highlight link gabcSpacingFactor Number
 
 " GABC and NABC snippet containers (transparent - no direct highlighting)
 " These will contain future specific notation syntax
