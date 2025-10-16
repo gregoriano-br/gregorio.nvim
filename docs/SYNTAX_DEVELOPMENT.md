@@ -25,6 +25,7 @@
    - [Iteration 10: Accidentals (Initial)](#iteration-10-accidentals-initial-implementation)
    - [Iteration 11: Accidentals (Corrected)](#iteration-11-accidentals-corrected)
    - [Iteration 12: Highlight Group Refinement](#iteration-12-highlight-group-refinement)
+   - [Iteration 13: Neume Fusions](#iteration-13-neume-fusions)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -45,7 +46,7 @@ The goal is to provide a reference for developers (human or AI) building similar
 
 ### Development Journey
 
-The syntax highlighting system was built through **13 iterations** starting from the absolute basics:
+The syntax highlighting system was built through **14 iterations** starting from the absolute basics:
 
 **Foundation** (Iterations 0-2):
 - File structure and comments
@@ -63,10 +64,11 @@ The syntax highlighting system was built through **13 iterations** starting from
 - Pitch inclinatum suffixes (0, 1, 2)
 - Comprehensive modifiers (30+ symbols)
 
-**Refinement** (Iterations 10-12):
+**Refinement** (Iterations 10-13):
 - Accidentals (initial incorrect implementation)
 - Accidentals (corrected with pitch BEFORE symbol)
 - Highlight group optimization for visual contrast
+- Neume fusions with `@` connector (individual and collective)
 
 Each iteration is documented with problem analysis, implementation details, testing strategy, challenges encountered, and solutions discovered.
 
@@ -1164,6 +1166,165 @@ if highlight ==# 'Constant'  " Character → Constant translation
 
 ---
 
+### Iteration 13: Neume Fusions
+
+**Goal**: Implement syntax highlighting for neume fusions using the `@` connector
+
+**Commit**: (current implementation)
+
+#### Problem Analysis
+
+GABC supports fusing multiple notes into a single neume using the `@` connector in two distinct forms:
+
+1. **Individual pitch fusion**: `f@g@h` - connects pitches sequentially
+2. **Collective pitch fusion**: `@[fghghi]` - function-style with bracket group
+
+These have different semantics and should be highlighted differently:
+- Individual connectors act as operators between pitches
+- Collective fusion uses function notation with arguments
+
+#### Implementation
+
+**Individual Fusion Connector**:
+```vim
+" Individual pitch fusion connector: @ between pitches (not before bracket)
+" Uses negative lookahead to avoid matching @[ (which is collective fusion)
+syntax match gabcFusionConnector /@\(\[\)\@!/ contained containedin=gabcSnippet
+```
+
+**Pattern Analysis**:
+- `@` - matches the @ symbol
+- `\(\[\)\@!` - negative lookahead: NOT followed by `[`
+- This ensures `@` in `@[...]` is not matched here
+
+**Collective Fusion Region**:
+```vim
+" Collective fusion: @[...] function-style fusion
+" The @ symbol acts as a function, and the bracketed pitches are the argument
+syntax region gabcFusionCollective matchgroup=gabcFusionFunction start=/@\[/ end=/\]/ keepend oneline contained containedin=gabcSnippet contains=gabcPitch,gabcAccidental,gabcModifierSimple,gabcModifierCompound,gabcModifierSpecial,gabcInitioDebilis,gabcOriscus,gabcOriscusSuffix,gabcPitchSuffix transparent
+```
+
+**Pattern Analysis**:
+- `matchgroup=gabcFusionFunction` - highlights `@[` and `]` as function
+- `start=/@\[/` - begins at `@[`
+- `end=/\]/` - ends at `]`
+- `contains=...` - allows all pitch elements inside
+- `transparent` - pitches inside keep their original highlighting
+
+**Updated gabcSnippet Container**:
+```vim
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcFusionCollective,gabcFusionConnector transparent
+```
+
+**Highlight Links**:
+```vim
+" Individual @ connector: operator-like
+highlight link gabcFusionConnector Operator
+
+" Collective @[...]: function-like
+highlight link gabcFusionFunction Function
+```
+
+#### Testing
+
+**Created**: `tests/smoke/fusion_smoke_test.gabc`
+
+**Test Cases**:
+1. Individual fusion: `f@g@h`
+2. Collective fusion: `@[fgh]`
+3. Mixed fusions: `@[def]@g@h`
+4. Fusions with modifiers: `f@gv@h`, `@[fvgwhs]`
+5. Fusions with accidentals: `fx@g@h#`, `@[fxghy]`
+6. Compound modifiers in fusions: `f@g@hvv`, `@[abc]@d@evv`
+7. Uppercase pitches (inclinatum): `F@G@H`, `@[FGH]`
+8. Edge cases: `@[f]`, `@[a]@b`
+9. Special modifiers: `f@o@g`, `@[fogh]`
+10. Sequential collective fusions: `@[abc]@[def]`
+
+**Validation Tests**:
+```vim
+" Individual fusion @ connector
+call cursor(4, 5)  " Position of @ in (f@g@h)
+let syntax = synIDattr(synID(line("."), col("."), 1), "name")
+" Expected: gabcFusionConnector
+
+" Collective fusion @ function
+call cursor(7, 8)  " Position of @ in (@[fgh])
+let syntax = synIDattr(synID(line("."), col("."), 1), "name")
+" Expected: gabcFusionFunction
+
+" Pitch inside collective fusion
+call cursor(7, 10)  " Position of f in @[fgh]
+let syntax = synIDattr(synID(line("."), col("."), 1), "name")
+" Expected: gabcPitch
+```
+
+**Results**:
+- ✓ Individual connector: `@` → `gabcFusionConnector` (Operator)
+- ✓ Collective function: `@[`, `]` → `gabcFusionFunction` (Function)
+- ✓ Pitches in fusion: maintain original `gabcPitch` highlighting
+- ✓ All modifiers work inside both fusion types
+
+#### Challenges
+
+**Challenge 1**: Distinguishing `@` contexts
+- **Problem**: `@` used in clef changes AND neume fusions
+- **Solution**: Clef connector only matches in `(c3@f4)` pattern; fusion connector in snippet context
+
+**Challenge 2**: Nested pitch highlighting
+- **Problem**: Pitches inside `@[...]` need highlighting
+- **Solution**: Use `transparent` region with `contains=` all pitch elements
+
+**Challenge 3**: Avoiding greedy matches
+- **Problem**: Individual `@` could match `@` in `@[...]`
+- **Solution**: Negative lookahead `\(\[\)\@!` prevents match before `[`
+
+#### Semantic Rationale
+
+**Why `Operator` for individual `@`?**
+- Connects two operands (pitches)
+- Binary operation semantics
+- Similar to clef connector `c3@f4`
+
+**Why `Function` for collective `@[...]`?**
+- Function call syntax: `@[arguments]`
+- Brackets indicate argument grouping
+- Different from infix operator pattern
+
+**Why keep pitch highlighting inside?**
+- Pitches maintain identity within fusion
+- Modifiers still modify individual pitches
+- Transparency preserves nested semantics
+
+#### Example Visual Output
+
+```gabc
+% Individual fusion (@ as Operator)
+Ky(f@g@h)ri(i)e()
+   ^ ^ ^  pitches: Character
+    @ @   connectors: Operator
+
+% Collective fusion (@ as Function, pitches as Character)
+e(f)le(@[fgh]gf)i(h)son()
+       ^^   ^^  delimiters: Function
+         ^^^    pitches: Character
+```
+
+#### Impact on System
+
+**Files Modified**:
+- `syntax/gabc.vim`: +14 lines (fusion patterns + highlights)
+- `tests/smoke/fusion_smoke_test.gabc`: +32 lines (new test file)
+
+**Backward Compatibility**: ✓ No breaking changes
+- Existing patterns unaffected
+- New patterns only match new syntax
+- All previous tests still pass
+
+**Test Results**: ✓ All 10 test cases pass
+
+---
+
 ## Syntax Highlighting Reference Table
 
 ### Complete Element-to-Highlight Mapping
@@ -1237,6 +1398,9 @@ if highlight ==# 'Constant'  " Character → Constant translation
 | Parenthesized natural | `gy?` | `gabcAccidental` | `Function` | Function | Cautionary natural |
 | Soft sharp | `g##` | `gabcAccidental` | `Function` | Function | Soft sharp (less prominent) |
 | Soft natural | `gY` | `gabcAccidental` | `Function` | Function | Soft natural (less prominent) |
+| **Neume Fusions** |
+| Individual fusion connector | `f@g@h` | `gabcFusionConnector` | `Operator` | Operator | Connects pitches sequentially into neume |
+| Collective fusion function | `@[fgh]` | `gabcFusionFunction` | `Function` | Function | Function-style fusion delimiters (@[ and ]) |
 
 ### Highlight Group Rationale
 
@@ -2016,8 +2180,13 @@ gabcNotes                               - Notes region: from %% to end of file
    │  │                                  - vv (bivirga), vvv (trivirga)
    │  │                                  - ss (distropha), sss (tristropha)
    │  │
-   │  └─ gabcModifierSpecial            - Special modifier sequences:
-   │                                     - r0 (punctum cavum with lines)
+   │  ├─ gabcModifierSpecial            - Special modifier sequences:
+   │  │                                  - r0 (punctum cavum with lines)
+   │  │
+   │  ├─ gabcFusionConnector            - Individual fusion: @ between pitches (f@g@h)
+   │  │
+   │  └─ gabcFusionCollective           - Collective fusion: @[...] function-style
+   │     └─ gabcFusionFunction          - Delimiters: @[ and ] (matchgroup)
    │
    └─ nabcSnippet                       - NABC notation snippet: St. Gall adiastematic neumes
                                          (Container for future NABC-specific elements)
@@ -2056,17 +2225,22 @@ gabcNotes                               - Notes region: from %% to end of file
 - **gabcModifierCompound**: Multi-character sequences (bivirga, tristropha)
 - **gabcModifierSpecial**: Special notation combinations
 
-#### 6. **Text Formatting**
+#### 6. **Neume Fusions**
+- **gabcFusionConnector**: Individual `@` connector between pitches
+- **gabcFusionCollective**: Collective `@[...]` function-style fusion region
+- **gabcFusionFunction**: Function delimiters (`@[` and `]`)
+
+#### 7. **Text Formatting**
 - **Basic Formatting**: Bold, italic, underline, small caps, teletype, color
 - **Lyric Control**: Centering `{...}`, translation `[...]`, elision `<e>`
 - **Special Tags**: EUOUAE markers, line break control, protrusion adjustment
 - **LaTeX Integration**: Verbatim `<v>` tags with embedded TeX syntax
 
-#### 7. **Staff Elements**
+#### 8. **Staff Elements**
 - **gabcClef**: Clef indicators (c1-c4, cb1-cb4, f1-f4)
 - **gabcClefConnector**: `@` for mid-line clef changes
 
-#### 8. **Lyric Text**
+#### 9. **Lyric Text**
 - **gabcSyllable**: Sung text syllables between notations
 - Container for all text formatting tags and special markers
 
@@ -2104,6 +2278,8 @@ gabcNotes                               - Notes region: from %% to end of file
 | `gabcLyricCentering` | `Special` | Centered groups |
 | `gabcVerbatimDelim` | `Delimiter` | LaTeX tag boundaries |
 | `@texSyntax` | *(TeX highlighting)* | Embedded LaTeX code |
+| `gabcFusionConnector` | `Operator` | Individual pitch fusion connector |
+| `gabcFusionFunction` | `Function` | Collective fusion delimiters |
 
 ### Notes on Syntax Organization
 
@@ -2145,6 +2321,6 @@ This hierarchical structure ensures accurate, context-aware highlighting through
 
 ---
 
-**Document Version**: 1.1  
+**Document Version**: 1.2  
 **Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim

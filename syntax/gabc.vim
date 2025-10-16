@@ -82,7 +82,7 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " GABC snippet: First snippet after ( up to | or )
 " This is a container for future GABC-specific notation elements  
 " Use a simpler pattern: match everything that's not | or )
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial transparent
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcFusionCollective,gabcFusionConnector transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -157,6 +157,19 @@ syntax match gabcModifierCompound /vv/ contained containedin=gabcSnippet   " biv
 syntax match gabcModifierCompound /ss/ contained containedin=gabcSnippet   " distropha
 syntax match gabcModifierCompound /vvv/ contained containedin=gabcSnippet  " trivirga
 syntax match gabcModifierCompound /sss/ contained containedin=gabcSnippet  " tristropha
+
+" GABC NEUME FUSIONS: @ connector for fusing notes into single neume
+" Two forms:
+" 1. Individual pitch fusion: f@g@h (connector between pitches)
+" 2. Collective pitch fusion: @[fghghi] (function-style with bracket group)
+
+" Collective fusion: @[...] function-style fusion
+" The @ symbol acts as a function, and the bracketed pitches are the argument
+syntax region gabcFusionCollective matchgroup=gabcFusionFunction start=/@\[/ end=/\]/ keepend oneline contained containedin=gabcSnippet contains=gabcPitch,gabcAccidental,gabcModifierSimple,gabcModifierCompound,gabcModifierSpecial,gabcInitioDebilis,gabcOriscus,gabcOriscusSuffix,gabcPitchSuffix transparent
+
+" Individual pitch fusion connector: @ between pitches (not before bracket)
+" Uses negative lookahead to avoid matching @[ (which is collective fusion)
+syntax match gabcFusionConnector /@\(\[\)\@!/ contained containedin=gabcSnippet
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
 syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
@@ -263,6 +276,10 @@ highlight link gabcModifierSpecial Identifier
 
 " GABC accidentals: symbols indicating pitch alteration (includes pitch letter for position)
 highlight link gabcAccidental Function
+
+" GABC neume fusions: @ connector for fusing notes into single neume
+highlight link gabcFusionConnector Operator
+highlight link gabcFusionFunction Function
 
 " GABC and NABC snippet containers (transparent - no direct highlighting)
 " These will contain future specific notation syntax
