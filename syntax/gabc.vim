@@ -149,7 +149,7 @@ highlight link nabcComplexGlyphDelimiter Delimiter
 " to=torculus, ci=climacus, sc=scandicus, pf=porrectus flexus, sf=scandicus flexus
 " tr=torculus resupinus, or=oriscus, ds=distropha, ts=tristropha, tg=trigonus
 " bv=bivirga, tv=trivirga, pr=pressus maior, pi=pressus minor, vs=virga strata
-" sa=scandicus, pq=pes quassus, ql=quilisma, pt=pes stratus, ni=nihil (placeholder)
+" sa=salicus, pq=pes quassus, ql=quilisma, pt=pes stratus, ni=nihil (placeholder)
 "
 " St. Gall specific:
 " st=stropha
