@@ -39,6 +39,9 @@
    - [Critical Bug Fix: gabcSyllable Region Containment](#critical-bug-fix-gabcsyllable-region-containment)
    - [Iteration 22: NABC Neume Codes](#iteration-22-nabc-neume-codes)
    - [Iteration 23: NABC Glyph Modifiers](#iteration-23-nabc-glyph-modifiers)
+   - [Iteration 24: NABC Pitch Descriptor](#iteration-24-nabc-pitch-descriptor)
+   - [Iteration 25: NABC Glyph Descriptors](#iteration-25-nabc-glyph-descriptors)
+   - [Iteration 26: NABC Subpunctis/Prepunctis Descriptors](#iteration-26-nabc-subpunctisprepunctis-descriptors)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -3935,6 +3938,12 @@ Users can now visually distinguish:
 | NABC neume code | `vi` `pu` `ta` `gr` `cl` `pe` `po` `to` `ci` `sc` `pf` `sf` `tr` `st` `ds` `ts` `tg` `bv` `tv` `pq` `pr` `pi` `vs` `or` `sa` `ql` `qi` `pt` `ni` `oc` `un` | `nabcNeume` | `Keyword` | Keyword | St. Gall/Laon neume codes (31 total) |
 | NABC glyph modifier | `S` `G` `M` `-` `>` `~` | `nabcGlyphModifier` | `SpecialChar` | SpecialChar | Neume glyph modifiers (mark, grouping, melodic, episema, liquescence) |
 | NABC modifier suffix | `1-9` | `nabcGlyphModifierNumber` | `Number` | Number | Numeric suffix for glyph modifiers |
+| **NABC Subpunctis/Prepunctis** |
+| Subpunctis base | `su` | `nabcSubPrepunctisBase` | `Entity` | Entity | Marks below neume (subpunctis descriptor base) |
+| Prepunctis base | `pp` | `nabcSubPrepunctisBase` | `Entity` | Entity | Marks above neume (prepunctis descriptor base) |
+| St. Gall modifiers | `t` `u` `v` `w` `x` `y` | `nabcSubPrepunctisModifier` | `SpecialChar` | SpecialChar | St. Gall tradition modifiers (tractulus, episema, gravis, liquescens) |
+| Laon modifiers | `n` `q` `z` `x` | `nabcSubPrepunctisModifier` | `SpecialChar` | SpecialChar | Laon tradition modifiers (uncinus, quilisma, virga, cephalicus) |
+| Descriptor count | `1-9` | `nabcSubPrepunctisNumber` | `Number` | Number | Mandatory count/quantity for descriptor |
 | **Generic Pitch Attributes** |
 | Divisio minor | `;` | `gabcBarMinor` | `Special` | Special | Half bar (minor division) |
 | Divisio minor suffix | `1-8` | `gabcBarMinorSuffix` | `Number` | Number | Minor bar variant (after ;) |
@@ -5710,6 +5719,215 @@ O delimitador `!` é realçado porque:
 
 ---
 
-**Document Version**: 2.2  
+## Iteration 26: NABC Subpunctis/Prepunctis Descriptors (October 16, 2025)
+
+### Overview
+
+NABC notation includes specialized descriptors for marks that appear **below** (subpunctis) or **above** (prepunctis) neumes. These descriptors use a specific syntax pattern and support various modifier characters from both St. Gall and Laon traditions.
+
+### Syntax Definition
+
+**Basic Structure**:
+```
+(su|pp) + optional_modifier + mandatory_number
+```
+
+**Components**:
+- **Base codes**: `su` (subpunctis), `pp` (prepunctis)
+- **Optional modifiers**: Single character from St. Gall or Laon traditions
+- **Mandatory number**: Digit from 1-9 (indicates count/quantity)
+
+**St. Gall Modifiers**:
+- `t` = tractulus
+- `u` = tractulus with episema
+- `v` = tractulus with double episema
+- `w` = gravis
+- `x` = liquescens stropha
+- `y` = gravis with episema
+
+**Laon Modifiers**:
+- `n` = uncinus
+- `q` = quilisma
+- `z` = virga
+- `x` = cephalicus (note: `x` appears in both traditions)
+
+### Examples
+
+**Simple descriptors**:
+```gabc
+(|su1|)    % subpunctis, count 1
+(|pp2|)    % prepunctis, count 2
+```
+
+**With St. Gall modifiers**:
+```gabc
+(|sut3|)   % subpunctis with tractulus, count 3
+(|ppw4|)   % prepunctis with gravis, count 4
+(|suu5|)   % subpunctis with tractulus+episema, count 5
+```
+
+**With Laon modifiers**:
+```gabc
+(|sun6|)   % subpunctis with uncinus, count 6
+(|ppq7|)   % prepunctis with quilisma, count 7
+(|suz8|)   % subpunctis with virga, count 8
+```
+
+**Multiple consecutive descriptors**:
+```gabc
+(|su1pp2|)        % subpunctis count 1, then prepunctis count 2
+(|sut3ppq4|)      % subpunctis+tractulus count 3, then prepunctis+quilisma count 4
+(|su1suz2pp3|)    % complex sequence of three descriptors
+```
+
+### Implementation Strategy
+
+The implementation uses a **container pattern** approach:
+
+1. **Container Match**: `nabcSubPrepunctisDescriptor` matches the complete pattern
+2. **Component Matches**: Individual elements are matched within the container
+3. **Transparent Container**: The main container is transparent (no visual highlighting)
+4. **Highlighted Components**: Each component gets specific highlighting
+
+### VimScript Implementation
+
+```vim
+" Container pattern - matches complete descriptors and enables component highlighting
+syntax match nabcSubPrepunctisDescriptor /\%(su\|pp\)[tuvwxynqz]\?[1-9]/ 
+  \ contained containedin=nabcSnippet 
+  \ contains=nabcSubPrepunctisBase,nabcSubPrepunctisModifier,nabcSubPrepunctisNumber 
+  \ transparent
+
+" Base codes: su (subpunctis) and pp (prepunctis)
+syntax match nabcSubPrepunctisBase /\%(su\|pp\)/ contained
+
+" Modifier characters: St. Gall and Laon traditions
+syntax match nabcSubPrepunctisModifier /[tuvwxynqz]/ contained
+
+" Mandatory number: digits 1-9
+syntax match nabcSubPrepunctisNumber /[1-9]/ contained
+```
+
+### Highlight Groups
+
+| Component | Highlight Group | Color/Style |
+|-----------|----------------|-------------|
+| Base (`su`, `pp`) | `Entity` | Distinctive entity highlighting |
+| Modifier (`t`, `u`, etc.) | `SpecialChar` | Special character formatting |
+| Number (`1`-`9`) | `Number` | Numeric value formatting |
+
+### Integration Requirements
+
+The new descriptor patterns must be included in the NABC snippet container:
+
+```vim
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation 
+  \ contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter,nabcSubPrepunctisDescriptor
+```
+
+### Pattern Matching Details
+
+**Container Pattern**: `/\%(su\|pp\)[tuvwxynqz]\?[1-9]/`
+- `\%(su\|pp\)` = non-capturing group for base codes
+- `[tuvwxynqz]\?` = optional modifier (0 or 1 occurrence)
+- `[1-9]` = mandatory number (exactly 1 occurrence)
+
+**Component Patterns**:
+- Base: `/\%(su\|pp\)/` = matches either `su` or `pp`
+- Modifier: `/[tuvwxynqz]/` = matches any single modifier character
+- Number: `/[1-9]/` = matches any digit from 1-9
+
+### Design Rationale
+
+#### Why Container + Components?
+
+1. **Semantic Grouping**: Each descriptor is a logical unit
+2. **Flexible Highlighting**: Components can have different colors
+3. **Future Extensibility**: Easy to add validation or processing
+4. **Clean Separation**: Base, modifier, and number are distinct concepts
+
+#### Why Entity Highlight for Base?
+
+The `Entity` highlight group emphasizes that `su` and `pp` are **semantic entities** in NABC notation:
+- They represent structural concepts (position relative to neume)
+- They're not just keywords or identifiers
+- They establish the context for the entire descriptor
+
+#### Why Allow Multiple Consecutive Descriptors?
+
+NABC notation permits complex arrangements:
+- Multiple marks below a single neume: `su1su2`
+- Mixed positioning: `su1pp2` (marks both above and below)
+- Complex sequences: `su1suz2pp3ppw4` (multiple modified descriptors)
+
+### Testing Strategy
+
+The implementation includes comprehensive testing:
+
+**Test Categories**:
+1. **Base Codes**: Simple `su1`, `pp2` patterns
+2. **St. Gall Modifiers**: All six modifier characters (`t`, `u`, `v`, `w`, `x`, `y`)
+3. **Laon Modifiers**: All four modifier characters (`n`, `q`, `z`, `x`)
+4. **Number Range**: Testing digits 1-9
+5. **Multiple Descriptors**: Consecutive and mixed patterns
+6. **Complex Sequences**: Real-world usage scenarios
+
+**Example Test Cases**:
+```bash
+# Simple descriptors
+test_pattern "su1" "nabcSubPrepunctisBase"
+test_pattern "pp2" "nabcSubPrepunctisBase"
+
+# With modifiers
+test_pattern "sut3" "nabcSubPrepunctisModifier"  # St. Gall
+test_pattern "ppq4" "nabcSubPrepunctisModifier"  # Laon
+
+# Numbers
+test_pattern "su5" "nabcSubPrepunctisNumber"
+test_pattern "pp9" "nabcSubPrepunctisNumber"
+
+# Multiple descriptors
+test_pattern "su1pp2" "multiple descriptors"
+```
+
+### Related Patterns
+
+- **NABC Snippet** (Iteration 6): Container for all NABC notation elements
+- **NABC Basic Glyph Descriptor** (Iteration 25): Main neume descriptors
+- **NABC Complex Glyph Delimiter** (Iteration 25): Delimiter for complex descriptors
+
+### Limitations
+
+1. **Position Context**: The syntax doesn't validate logical positioning (e.g., subpunctis should appear below)
+2. **Count Semantics**: Numbers are treated as arbitrary digits, not validated counts
+3. **Modifier Conflicts**: No validation for incompatible modifier combinations
+4. **Cross-Traditional**: St. Gall and Laon modifiers are freely mixable (may not be historically accurate)
+
+### Future Enhancements
+
+Potential improvements for future iterations:
+
+1. **Semantic Validation**: Check modifier-tradition compatibility
+2. **Position Awareness**: Validate subpunctis/prepunctis logical placement
+3. **Count Validation**: Ensure numbers represent valid quantities
+4. **Extended Modifiers**: Support additional modifier characters if discovered
+5. **Combination Rules**: Implement rules for valid descriptor sequences
+
+### Files Modified
+
+- `syntax/gabc.vim`: Added subpunctis/prepunctis descriptor patterns
+- `example_subprepunctis.gabc`: Created comprehensive example file
+- `test_nabc_subprepunctis.sh`: Test script for syntax validation (17 test cases)
+
+### Notes
+
+1. **Modifier Precedence**: All modifiers have equal precedence in pattern matching
+2. **Container Transparency**: The main descriptor pattern is transparent to avoid double-highlighting
+3. **Component Independence**: Each component (base, modifier, number) can be highlighted independently
+4. **Integration Points**: Descriptors integrate with existing NABC snippet infrastructure
+
+---
+
+**Document Version**: 2.3  
 **Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim

@@ -1,0 +1,30 @@
+name: NABC Subpunctis/Prepunctis Test;
+office-part: Test;
+annotation: Test;
+%%
+
+A(|su1|)men. 
+A(|sut2|)men.
+A(|suu3|)men.
+A(|suv4|)men.
+A(|suw5|)men. 
+A(|sux6|)men.
+A(|suy7|)men.
+A(|sun8|)men.
+A(|suq9|)men.
+A(|suz1|)men.
+
+A(|pp1|)men.
+A(|ppt2|)men.
+A(|ppu3|)men.
+A(|ppv4|)men.
+A(|ppw5|)men.
+A(|ppx6|)men.
+A(|ppy7|)men.
+A(|ppn8|)men.
+A(|ppq9|)men.
+A(|ppz1|)men.
+
+A(|su1pp2|)men.
+A(|sut3ppq4|)men.
+A(|su1suz2pp3ppw4|)men.

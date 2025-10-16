@@ -104,7 +104,7 @@ syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation trans
 " NABC snippet: All subsequent positions (after pipe delimiter)
 " Contains St. Gall and Laon neume codes
 " Note: NOT transparent - contains specific NABC syntax elements
-syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter,nabcSubPrepunctisDescriptor
 
 " ============================================================================
 " NABC GLYPH DESCRIPTORS: Structured grouping of neume elements
@@ -201,6 +201,59 @@ syntax match nabcPitchDescriptorPitch /\(h\)\@<=[a-np]/ contained containedin=na
 " NABC pitch descriptor highlight groups
 highlight link nabcPitchDescriptorH Function
 highlight link nabcPitchDescriptorPitch Identifier
+
+" ============================================================================
+" NABC SUBPUNCTIS/PREPUNCTIS DESCRIPTORS: Additional notation marks
+" ============================================================================
+
+" SUBPUNCTIS/PREPUNCTIS DESCRIPTORS: Specialized notation for marks below/above neumes
+" Syntax: (su|pp) + optional_modifier + mandatory_number(1-9)
+" Multiple descriptors can appear consecutively in any order
+"
+" Base codes:
+"   su = subpunctis (marks below the neume)
+"   pp = prepunctis (marks above the neume)
+"
+" St. Gall modifiers:
+"   t = tractulus
+"   u = tractulus with episema  
+"   v = tractulus with double episema
+"   w = gravis
+"   x = liquescens stropha
+"   y = gravis with episema
+"
+" Laon modifiers:
+"   n = uncinus
+"   q = quilisma
+"   z = virga
+"   x = cephalicus
+"
+" Examples:
+"   su1      - simple subpunctis with count 1
+"   sut3     - subpunctis with tractulus modifier, count 3
+"   pp2      - simple prepunctis with count 2
+"   ppq5     - prepunctis with quilisma modifier, count 5
+"   su1pp2   - subpunctis count 1 followed by prepunctis count 2
+
+" NABC subpunctis/prepunctis complete descriptors: su/pp + optional modifier + mandatory number
+" Pattern matches the complete descriptor and uses 'contains' to highlight components
+syntax match nabcSubPrepunctisDescriptor /\%(su\|pp\)[tuvwxynqz]\?[1-9]/ contained containedin=nabcSnippet contains=nabcSubPrepunctisBase,nabcSubPrepunctisModifier,nabcSubPrepunctisNumber transparent
+
+" NABC subpunctis/prepunctis base codes: su (subpunctis) and pp (prepunctis)
+syntax match nabcSubPrepunctisBase /\%(su\|pp\)/ contained
+
+" NABC subpunctis/prepunctis modifiers: St. Gall and Laon modifier characters  
+" St. Gall: t, u, v, w, x, y
+" Laon: n, q, z, x (x appears in both traditions with different meanings)
+syntax match nabcSubPrepunctisModifier /[tuvwxynqz]/ contained
+
+" NABC subpunctis/prepunctis number: mandatory digit 1-9
+syntax match nabcSubPrepunctisNumber /[1-9]/ contained
+
+" NABC subpunctis/prepunctis highlight groups
+highlight link nabcSubPrepunctisBase Entity
+highlight link nabcSubPrepunctisModifier SpecialChar
+highlight link nabcSubPrepunctisNumber Number
 
 " GABC pitches: a-p (excluding 'o'), both lowercase (punctum quadratum) and uppercase (punctum inclinatum)
 " Lowercase: a b c d e f g h i j k l m n p (punctum quadratum - square note)
