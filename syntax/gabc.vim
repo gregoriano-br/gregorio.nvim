@@ -35,8 +35,10 @@ syntax match gabcComment /^%$/ containedin=gabcHeaders,gabcNotes
 syntax match gabcComment /\([^%]\)\@<=%.*/ contains=@NoSpell containedin=gabcHeaders,gabcNotes
 
 " 3) Regions: header (from BOF up to just before %%), notes (from %% to EOF)
-syntax region gabcHeaders start=/\%1l/ end=/^%%$/me=s-1 keepend
-syntax region gabcNotes  start=/^/ end=/\%$/ keepend contained
+" Headers: from line 1 until %% (exclusive)
+" Notes: from line after %% to end of file
+syntax region gabcHeaders start=/\%^/ end=/^%%$/me=e-2 keepend
+syntax region gabcNotes start=/^%%$/ end=/\%$/ keepend contains=gabcComment,gabcSectionSeparator,gabcClef,gabcLyricCentering,gabcTranslation,gabcNotation,gabcSyllable
 
 " Highlight groups (do not color the regions themselves)
 highlight link gabcSectionSeparator Special
