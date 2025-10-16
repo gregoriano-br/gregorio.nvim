@@ -37,6 +37,7 @@
    - [Iteration 21: Macros (Notation Shortcuts)](#iteration-21-macros-notation-shortcuts)
    - [Appendix to Iteration 21: No-Custos Attribute](#appendix-to-iteration-21-no-custos-attribute)
    - [Critical Bug Fix: gabcSyllable Region Containment](#critical-bug-fix-gabcsyllable-region-containment)
+   - [Iteration 22: NABC Neume Codes](#iteration-22-nabc-neume-codes)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -57,7 +58,7 @@ The goal is to provide a reference for developers (human or AI) building similar
 
 ### Development Journey
 
-The syntax highlighting system was built through **21 iterations** starting from the absolute basics:
+The syntax highlighting system was built through **22 iterations** starting from the absolute basics:
 
 **Foundation** (Iterations 0-2):
 - File structure and comments
@@ -90,13 +91,14 @@ The syntax highlighting system was built through **21 iterations** starting from
 - Line breaks (layout control: z, Z with suffixes)
 - Critical containment fix for gabcSnippet
 
-**Semantic Specialization** (Iterations 20-21):
+**Semantic Specialization** (Iterations 20-22):
 - Specialized pitch attributes (18 types across 8 categories)
 - Choral signs, braces, stem length, ledger lines, slurs
 - Episema tuning, above-lines text, verbatim TeX (3 scopes)
 - No-custos boolean flag attribute (appendix to Iteration 21)
 - Pattern precedence over generic fallback
 - Macros (3 scopes: note, glyph, element with 0-9 parameters)
+- NABC neume codes (31 codes from St. Gall and Laon traditions)
 
 **Current Status**: 68 syntax elements, 64 highlight groups, 582 lines of VimScript
 
@@ -3427,6 +3429,187 @@ This was a **critical bug** that affected the fundamental structure and usabilit
 
 ---
 
+### Iteration 22: NABC Neume Codes
+
+**Date**: October 16, 2024  
+**Focus**: Implement syntax highlighting for St. Gall and Laon neume codes  
+**Commit**: `d9452c0`
+
+**Background**:
+
+NABC (Neumes from Adiastematic to Coded Braille) is a notation system used in early neumatic manuscripts, particularly from St. Gall and Laon traditions. These use 2-letter codes to represent specific neume shapes.
+
+After implementing GABC/NABC alternation (with documented limitations), the next step is to add specific syntax highlighting for NABC neume codes within `nabcSnippet` regions.
+
+**Problem**:
+
+NABC snippets (even positions after `|` delimiter in notation patterns) had no internal structure—everything was treated as generic content. Need to recognize and highlight specific neume codes.
+
+**Requirements**:
+
+1. Support both St. Gall and Laon neume codifications
+2. Unified list eliminating duplicates
+3. Highlight 2-letter codes as keywords
+4. Allow modifiers after codes (-, ~, ', etc.)
+5. Codes are case-sensitive
+
+**NABC Neume Codes**:
+
+**Common to both St. Gall and Laon** (25 codes):
+- `vi` = virga
+- `pu` = punctum
+- `ta` = tractulus
+- `gr` = gravis
+- `cl` = clivis
+- `pe` = pes
+- `po` = porrectus
+- `to` = torculus
+- `ci` = climacus
+- `sc` = scandicus
+- `pf` = porrectus flexus
+- `sf` = scandicus flexus
+- `tr` = torculus resupinus
+- `ds` = distropha
+- `ts` = tristropha
+- `tg` = trigonus
+- `bv` = bivirga
+- `tv` = trivirga
+- `pq` = pes quassus
+- `pr` = pressus maior
+- `pi` = pressus minor
+- `vs` = virga strata
+- `or` = oriscus
+- `sa` = scandicus
+- `ql` = quilisma (3 loops)
+- `qi` = quilisma (2 loops)
+- `pt` = pes stratus
+- `ni` = nihil (null neume, placeholder)
+
+**St. Gall specific** (1 code):
+- `st` = stropha
+
+**Laon specific** (2 codes):
+- `oc` = oriscus-clivis
+- `un` = uncinus
+
+**Total**: 31 unique neume codes
+
+**Implementation**:
+
+```vim
+" NABC snippet: All subsequent positions (after pipe delimiter)
+" Contains St. Gall and Laon neume codes
+" Note: NOT transparent - contains specific NABC syntax elements
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation
+
+" NABC Neume Codes (2-letter identifiers)
+syntax match nabcNeume /\(vi\|pu\|ta\|gr\|cl\|pe\|po\|to\|ci\|sc\|pf\|sf\|tr\|st\|ds\|ts\|tg\|bv\|tv\|pq\|pr\|pi\|vs\|or\|sa\|ql\|qi\|pt\|ni\|oc\|un\)/ contained containedin=nabcSnippet
+
+" Highlight as keyword
+highlight link nabcNeume Keyword
+```
+
+**Key Changes**:
+
+1. **Removed `transparent` from `nabcSnippet`**: Previously, `nabcSnippet` was transparent to allow GABC elements to show through (workaround for alternation limitation). Now it's a proper container for NABC-specific elements.
+
+2. **Pattern without word boundaries**: Used simple alternation pattern `/\(vi\|pu\|...\)/` instead of `/\<...\>/` because:
+   - NABC codes can be immediately followed by modifiers without spaces
+   - Word boundaries don't work reliably in this context
+   - Examples: `gr-cl`, `pe.po`, `to~ci`
+
+3. **`contained containedin=nabcSnippet`**: Neume codes only appear within NABC snippets
+
+**Testing**:
+
+Created `tests/test_nabc_neumes.sh`:
+
+```bash
+# Test pattern: (e|vi|f|pu|g|ta|h)
+# Tests positions 8 (vi), 14 (pu), others
+
+# Test compound: (a|gr-cl|b|pe.po|c|to~ci)
+# Tests neumes with modifiers
+
+# Test Laon: (a|oc|b|un)
+# Tests Laon-specific codes
+```
+
+**Results**:
+```
+✓ PASS: 'vi' contains nabcNeume
+✓ PASS: 'pu' contains nabcNeume
+✓ PASS: 'gr' contains nabcNeume (in gr-cl)
+✓ PASS: 'oc' (Laon) contains nabcNeume
+```
+
+All 4 tests passing.
+
+**Example Usage**:
+
+```gabc
+name: NABC Example;
+%%
+Te(e|vi|fgFE|pu-gr)xt(h|cl~pe)
+```
+
+Highlighting:
+- `e`: GABC pitch (Character)
+- `vi`: NABC neume (Keyword)
+- `fgFE`: GABC pitches (Character)
+- `pu`, `gr`: NABC neumes (Keyword)
+- `h`: GABC pitch (Character)
+- `cl`, `pe`: NABC neumes (Keyword)
+
+**Syntax Stack**:
+
+```
+gabcNotes → gabcNotation → nabcSnippet → nabcNeume
+```
+
+**Limitations**:
+
+1. **No compound neume recognition**: `gr-cl` is recognized as two separate neumes `gr` and `cl`, not as a compound. This is acceptable since they highlight correctly.
+
+2. **No semantic validation**: Parser doesn't validate that neume combinations are musically valid—it just highlights recognized codes.
+
+3. **Modifiers not separately highlighted**: Modifiers like `-`, `.`, `~` are not given separate highlighting (could be future enhancement).
+
+**Files Changed**:
+- `syntax/gabc.vim`: Added `nabcNeume` pattern and highlight link
+- `tests/test_nabc_neumes.sh`: Comprehensive test suite (141 lines)
+
+**Related Work**:
+
+This implementation complements:
+- Bug 2 fix (GABC/NABC alternation with documented limitations)
+- Future: Tree-sitter parser will have perfect alternation + compound neume recognition
+
+**Impact**:
+
+Before:
+```gabc
+(e|vi|f|pu)
+     ^^   ^^  # No special highlighting, just text
+```
+
+After:
+```gabc
+(e|vi|f|pu)
+   🔵   🔵  # Keywords highlighted (vi, pu recognized as neumes)
+```
+
+Users can now visually distinguish NABC neume codes from arbitrary text, improving readability of manuscripts with St. Gall or Laon notation.
+
+**Lessons Learned**:
+
+1. **Transparency blocks containment**: `transparent` regions cannot contain other elements—they must be opaque containers
+2. **Context-specific patterns**: NABC codes need different pattern rules than GABC pitches
+3. **Unified lists eliminate duplication**: St. Gall and Laon share most codes, only 3 codes are unique
+4. **Simple patterns work**: Don't over-engineer with complex word boundaries when simple alternation suffices
+
+---
+
 ## Syntax Highlighting Reference Table
 
 ### Complete Element-to-Highlight Mapping
@@ -3546,6 +3729,8 @@ This was a **critical bug** that affected the fundamental structure and usabilit
 | Note-level macro | `[nm0]` - `[nm9]` | `gabcMacroNote` | `Function` + `Number` | Function, Number | Predefined note pattern (identifier: Function, digit: Number) |
 | Glyph-level macro | `[gm0]` - `[gm9]` | `gabcMacroGlyph` | `Function` + `Number` | Function, Number | Predefined glyph pattern (identifier: Function, digit: Number) |
 | Element-level macro | `[em0]` - `[em9]` | `gabcMacroElement` | `Function` + `Number` | Function, Number | Predefined element pattern (identifier: Function, digit: Number) |
+| **NABC Neumes (St. Gall and Laon)** |
+| NABC neume code | `vi` `pu` `ta` `gr` `cl` `pe` `po` `to` `ci` `sc` `pf` `sf` `tr` `st` `ds` `ts` `tg` `bv` `tv` `pq` `pr` `pi` `vs` `or` `sa` `ql` `qi` `pt` `ni` `oc` `un` | `nabcNeume` | `Keyword` | Keyword | St. Gall/Laon neume codes (31 total) |
 | **Generic Pitch Attributes** |
 | Divisio minor | `;` | `gabcBarMinor` | `Special` | Special | Half bar (minor division) |
 | Divisio minor suffix | `1-8` | `gabcBarMinorSuffix` | `Number` | Number | Minor bar variant (after ;) |
@@ -4676,6 +4861,7 @@ gabcNotes                               - Notes region: from %% to end of file
 | `gabcAttrNoCustos` | `Keyword` | No custos flag ([nocustos]) |
 | `gabcMacroIdentifier` | `Function` | Macro identifier (nm/gm/em) |
 | `gabcMacroNumber` | `Number` | Macro parameter digit (0-9) |
+| `nabcNeume` | `Keyword` | NABC neume codes (vi, pu, ta, gr, cl, pe, po, to, ci, sc, pf, sf, tr, st, ds, ts, tg, bv, tv, pq, pr, pi, vs, or, sa, ql, qi, pt, ni, oc, un) |
 
 ### Notes on Syntax Organization
 
@@ -4899,6 +5085,6 @@ Veja seção **Roadmap Tree-sitter** para plano de implementação.
 
 ---
 
-**Document Version**: 1.8  
-**Last Updated**: December 2024  
+**Document Version**: 1.9  
+**Last Updated**: October 16, 2024  
 **Maintained by**: AISCGre-BR/gregorio.nvim
