@@ -181,6 +181,33 @@ syntax match gabcModifierCompound /ss/ contained containedin=gabcSnippet   " dis
 syntax match gabcModifierCompound /vvv/ contained containedin=gabcSnippet  " trivirga
 syntax match gabcModifierCompound /sss/ contained containedin=gabcSnippet  " tristropha
 
+" GABC SEPARATION BARS: Divisio marks for phrase/section boundaries
+" Bars indicate liturgical divisions with varying weights
+" Order matters: compound bars (::, :?) BEFORE simple bars to take precedence
+
+" Compound bars (define first for higher precedence)
+syntax match gabcBarDouble /::/ contained containedin=gabcSnippet          " divisio finalis (double full bar)
+syntax match gabcBarDotted /:?/ contained containedin=gabcSnippet          " dotted divisio maior
+
+" Simple bars
+syntax match gabcBarMaior /:/ contained containedin=gabcSnippet            " divisio maior (full bar)
+syntax match gabcBarMinor /;/ contained containedin=gabcSnippet            " divisio minor (half bar)
+syntax match gabcBarMinima /,/ contained containedin=gabcSnippet           " divisio minima (quarter bar)
+syntax match gabcBarMinimaOcto /\^/ contained containedin=gabcSnippet      " divisio minimis/eighth bar
+syntax match gabcBarVirgula /`/ contained containedin=gabcSnippet          " virgula
+
+" Bar numeric suffixes (use lookbehind to match only after specific bars)
+" divisio minor (;) can have suffixes 1-8
+syntax match gabcBarMinorSuffix /\(;\)\@<=[1-8]/ contained containedin=gabcSnippet
+
+" divisio minima (,), minimis (^), and virgula (`) can have optional suffix 0
+syntax match gabcBarZeroSuffix /\([,\^`]\)\@<=0/ contained containedin=gabcSnippet
+
+" Bar modifiers
+" ' = vertical episema (already defined as gabcModifierIctus in rhythmic section)
+" _ = bar brace (already defined as gabcModifierEpisema in rhythmic section)
+" These modifiers reuse existing highlight groups when applied to bars
+
 " GABC NEUME FUSIONS: @ connector for fusing notes into single neume
 " Two forms:
 " 1. Individual pitch fusion: f@g@h (connector between pitches)
@@ -368,6 +395,18 @@ highlight link gabcModifierEpisema Identifier
 highlight link gabcModifierEpisemaNumber Number
 highlight link gabcModifierIctus Identifier
 highlight link gabcModifierIctusNumber Number
+
+" GABC separation bars: divisio marks for phrase/section boundaries
+" Similar to semicolons in code - clear structural markers
+highlight link gabcBarDouble Special
+highlight link gabcBarDotted Special
+highlight link gabcBarMaior Special
+highlight link gabcBarMinor Special
+highlight link gabcBarMinima Special
+highlight link gabcBarMinimaOcto Special
+highlight link gabcBarVirgula Special
+highlight link gabcBarMinorSuffix Number
+highlight link gabcBarZeroSuffix Number
 
 " GABC accidentals: symbols indicating pitch alteration (includes pitch letter for position)
 highlight link gabcAccidental Function
