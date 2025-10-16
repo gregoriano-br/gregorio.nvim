@@ -35,10 +35,11 @@ syntax match gabcComment /^%$/ containedin=gabcHeaders,gabcNotes
 syntax match gabcComment /\([^%]\)\@<=%.*/ contains=@NoSpell containedin=gabcHeaders,gabcNotes
 
 " 3) Regions: header (from BOF up to just before %%), notes (from %% to EOF)
-" Headers: from line 1 until %% (exclusive)
-" Notes: from line after %% to end of file
+" Strategy: gabcHeaders goes from BOF to just before %%, gabcNotes goes from line after %% to EOF
+" The %% line itself is handled by gabcSectionSeparator
 syntax region gabcHeaders start=/\%^/ end=/^%%$/me=e-2 keepend
-syntax region gabcNotes start=/^%%$/ end=/\%$/ keepend contains=gabcComment,gabcSectionSeparator,gabcClef,gabcLyricCentering,gabcTranslation,gabcNotation,gabcSyllable
+syntax match gabcSectionSeparator /^%%$/ nextgroup=gabcNotes skipnl skipwhite skipempty
+syntax region gabcNotes start=/^/ end=/\%$/ keepend contains=gabcComment,gabcClef,gabcLyricCentering,gabcTranslation,gabcNotation,gabcSyllable contained
 
 " Highlight groups (do not color the regions themselves)
 highlight link gabcSectionSeparator Special
@@ -395,7 +396,7 @@ syntax region gabcPitchAttrValue start=/\(\[\w\+:\)\@<=/ end=/\(\]\)\@=/ contain
 " The region implicitly disables Vim's built-in paren matching for its contents
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
-syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
+syntax match gabcSyllable /[^()<>]\+/ contained containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
 
 " XML-like inline tags within syllables
 " Tag regions (opening and closing) with inner text per markup type
