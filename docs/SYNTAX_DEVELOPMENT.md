@@ -33,6 +33,7 @@
    - [Iteration 18: Custos (End-of-Line Guide)](#iteration-18-custos-end-of-line-guide)
    - [Iteration 19: Line Breaks (Layout Control)](#iteration-19-line-breaks-layout-control)
    - [Critical Fix: gabcSnippet Containment](#critical-fix-gabcsnippet-containment-iteration-17-19)
+   - [Iteration 20: Specialized Pitch Attributes](#iteration-20-specialized-pitch-attributes-semantic-types)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -53,7 +54,7 @@ The goal is to provide a reference for developers (human or AI) building similar
 
 ### Development Journey
 
-The syntax highlighting system was built through **19 iterations** starting from the absolute basics:
+The syntax highlighting system was built through **20 iterations** starting from the absolute basics:
 
 **Foundation** (Iterations 0-2):
 - File structure and comments
@@ -85,6 +86,12 @@ The syntax highlighting system was built through **19 iterations** starting from
 - Custos (end-of-line pitch guide: [pitch]+)
 - Line breaks (layout control: z, Z with suffixes)
 - Critical containment fix for gabcSnippet
+
+**Semantic Specialization** (Iteration 20):
+- Specialized pitch attributes (17 types across 8 categories)
+- Choral signs, braces, stem length, ledger lines, slurs
+- Episema tuning, above-lines text, verbatim TeX (3 scopes)
+- Pattern precedence over generic fallback
 
 Each iteration is documented with problem analysis, implementation details, testing strategy, challenges encountered, and solutions discovered.
 
@@ -2676,6 +2683,290 @@ Future element additions must:
 
 ---
 
+### Iteration 20: Specialized Pitch Attributes (Semantic Types)
+
+**Date**: October 16, 2025  
+**Commit**: `c158d00`
+
+**Problem**: GABC's generic `[attribute:value]` syntax (Iteration 15) handles custom metadata, but many attributes have specific semantic meanings in the Gregorio ecosystem. These specialized attributes deserve dedicated syntax patterns and distinct highlighting to improve visual clarity and semantic understanding.
+
+**Specialized Attribute Categories**:
+
+The Gregorio specification defines 17 specialized attribute types across 8 semantic categories:
+
+**1. Choral Signs** - Annotations for choir directors:
+- `[cs:text]` - choral sign with custom text (e.g., crescendo, forte)
+- `[cn:code]` - choral sign with NABC neume code
+
+**2. Braces** - Grouping indicators for neumes:
+- `[ob:1|0]` - overbrace (above staff, on/off toggle)
+- `[ub:1|0]` - underbrace (below staff, on/off toggle)
+- `[ocb:1|0]` - overcurly brace (decorative grouping)
+- `[ocba:1|0]` - overcurly brace with accent (emphasize group)
+
+**3. Stem Length** - Custom stem extension:
+- `[ll:value]` - adjusts vertical stem length for bottom line notes
+
+**4. Custom Ledger Lines** - Manual ledger line positioning:
+- `[oll:position]` - over ledger lines (above staff)
+- `[ull:position]` - under ledger lines (below staff)
+
+**5. Simple Slurs** - Manual slur/ligature marks:
+- `[oslur:type]` - over slur (above staff)
+- `[uslur:type]` - under slur (below staff)
+
+**6. Horizontal Episema Tuning** - Fine-tune episema positioning:
+- `[oh:adjustment]` - over horizontal episema adjustment
+- `[uh:adjustment]` - under horizontal episema adjustment
+
+**7. Above Lines Text** - Staff annotations (alternative to `<alt>` tag):
+- `[alt:text]` - text annotation displayed above staff
+
+**8. Verbatim TeX** - Embedded LaTeX code at different scopes:
+- `[nv:tex]` - note level verbatim TeX
+- `[gv:tex]` - glyph level verbatim TeX
+- `[ev:tex]` - element level verbatim TeX
+
+**Implementation Strategy**:
+
+**Critical: Pattern Precedence**
+- Specialized patterns MUST be defined BEFORE generic `[attr:value]` patterns
+- VimScript uses "last-match-wins" - more specific patterns need higher priority
+- Order: specialized (line 279) → generic (line 352)
+
+**Choral Signs** (Type highlight - annotation metadata):
+```vim
+syntax match gabcAttrChoralSign /\[cs:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrChoralNabc /\[cn:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+```
+
+**Braces** (Function highlight - structural grouping):
+```vim
+syntax match gabcAttrBrace /\[ob:[01]\]/ contained containedin=gabcSnippet
+syntax match gabcAttrBrace /\[ub:[01]\]/ contained containedin=gabcSnippet
+syntax match gabcAttrBrace /\[ocb:[01]\]/ contained containedin=gabcSnippet
+syntax match gabcAttrBrace /\[ocba:[01]\]/ contained containedin=gabcSnippet
+```
+
+**Numeric Adjustments** (Number highlight - measurements):
+```vim
+syntax match gabcAttrStemLength /\[ll:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrEpisemaTune /\[oh:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrEpisemaTune /\[uh:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+```
+
+**Positional Elements** (Function highlight - manual positioning):
+```vim
+syntax match gabcAttrLedgerLines /\[oll:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrLedgerLines /\[ull:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrSlur /\[oslur:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrSlur /\[uslur:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+```
+
+**Text Annotations** (String highlight - textual content):
+```vim
+syntax match gabcAttrAboveLinesText /\[alt:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+```
+
+**Verbatim TeX** (Special delimiters + LaTeX syntax):
+```vim
+syntax region gabcAttrVerbatimNote matchgroup=gabcAttrVerbatimDelim \
+  start=/\[nv:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
+syntax region gabcAttrVerbatimGlyph matchgroup=gabcAttrVerbatimDelim \
+  start=/\[gv:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
+syntax region gabcAttrVerbatimElement matchgroup=gabcAttrVerbatimDelim \
+  start=/\[ev:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
+```
+
+**Key Design Decisions**:
+
+1. **Semantic Highlight Groups**:
+   - **Type** (choral signs): Metadata annotations for performance
+   - **Function** (braces, slurs, ledger lines): Structural/positioning elements
+   - **Number** (stem length, episema tuning): Numeric measurements
+   - **String** (above lines text): Textual content
+   - **Special** (verbatim TeX delimiters): Distinguished embedded code
+   - **@texSyntax** (TeX content): Full LaTeX syntax highlighting inside regions
+
+2. **Pattern Precedence**:
+   - Specialized defined at line 279, generic at line 352
+   - 73-line gap ensures specialized patterns match first
+   - Generic `[attr:value]` acts as fallback for unrecognized attributes
+   - Automated test verifies precedence order
+
+3. **TeX Integration**:
+   - Uses `syntax region` with `matchgroup` for delimiters
+   - `contains=@texSyntax` enables full LaTeX highlighting inside
+   - Three scopes (note/glyph/element) for different granularities
+   - Inherits from `<v>` verbatim tag LaTeX integration (Iteration 5)
+
+4. **Pattern Specificity**:
+   - Braces use `[01]` character class (boolean toggle)
+   - Other attributes use `[^\]]\+` (any non-bracket content)
+   - Specific patterns prevent false matches with generic patterns
+
+5. **Highlight Variety**:
+   - 9 distinct highlight groups across 11 pattern groups
+   - Visual variety helps distinguish attribute purposes
+   - Numeric vs textual vs structural elements clearly differentiated
+
+**Testing Strategy**:
+
+Created comprehensive test file with 22 test cases:
+
+```gabc
+% Test 1: Choral signs
+(f[cs:crescendo]g[cn:virga]h) text;
+
+% Test 2-5: All brace types
+(f[ob:1]g[ob:0]h) text;
+(f[ub:1]g[ub:0]h) text;
+(f[ocb:1]g[ocb:0]h) text;
+(f[ocba:1]g[ocba:0]h) text;
+
+% Test 6: Stem length
+(a[ll:0.5]b[ll:1.0]c) text;
+
+% Test 7-8: Custom ledger lines
+(m[oll:1]n[oll:2]p) text;
+(a[ull:1]b[ull:2]c) text;
+
+% Test 9-10: Simple slurs
+(f[oslur:1]g[oslur:2]h) text;
+(f[uslur:1]g[uslur:2]h) text;
+
+% Test 11-12: Episema tuning
+(f[oh:0.5]g[oh:-0.5]h) text;
+(f[uh:0.5]g[uh:-0.5]h) text;
+
+% Test 13: Above lines text
+(f[alt:cresc.]g[alt:dim.]h) text;
+
+% Test 14-16: Verbatim TeX (3 scopes)
+(f[nv:\scriptsize]g[nv:\textit{text}]h) text;
+(f[gv:\color{red}]g[gv:\footnotesize]h) text;
+(f[ev:\hspace{2pt}]g[ev:\raise 1pt]h) text;
+
+% Test 17: Complex TeX code
+(f[nv:\textbf{\Large Dóminus}]g) text;
+
+% Test 18: Multiple attributes on same pitch
+(f[cs:cresc.][nv:\scriptsize]g) text;
+
+% Test 19: Mixed specialized and generic
+(f[shape:virga][cs:forte]g[color:red][alt:*)h) text;
+
+% Test 22: Integration with other elements
+(f[cs:cresc.]g'_[nv:\textit{rit.}]h:) text(i+) z+;
+```
+
+**Automated Validation** (`test_specialized_attributes.sh`):
+1. ✓ All 11 specialized pattern groups defined
+2. ✓ All 9 highlight links correct
+3. ✓ All attributes in gabcSnippet contains= list (11 elements)
+4. ✓ Test file has 17 different attribute types (47 total examples)
+5. ✓ Verbatim TeX attributes include @texSyntax
+6. ✓ Pattern precedence verified (specialized line 279 < generic line 352)
+7. ✓ Test coverage: 5 choral, 4 braces, 6 verbatim TeX
+8. ✓ All 80+ existing plugin tests still passing
+
+**Visual Example**:
+
+```gabc
+(f[cs:crescendo]g'_[nv:\textit{rit.}]h[alt:*]:) text(i[ll:0.5]+) z+;
+```
+
+**Highlighting**:
+- `[cs:crescendo]` → **Type** (choral sign)
+- `[nv:\textit{rit.}]` → **Special** delimiters + **LaTeX** syntax inside
+- `[alt:*]` → **String** (text annotation)
+- `[ll:0.5]` → **Number** (stem length)
+- Generic `[shape:virga]` would be → **PreProc**/String (generic pattern)
+
+**Challenges Solved**:
+
+1. **Pattern Precedence**:
+   - Issue: Generic `[attr:value]` would match specialized attributes first
+   - Problem: Specialized semantics lost, all attributes look same
+   - Solution: Define specialized patterns BEFORE generic (line 279 vs 352)
+   - Verification: Automated test checks pattern definition order
+   - Result: Specialized patterns take precedence, correct highlighting
+
+2. **LaTeX Syntax Integration**:
+   - Issue: TeX code inside `[nv:...]` needs proper syntax highlighting
+   - Problem: Generic string highlighting insufficient for code
+   - Solution: Use `syntax region` with `contains=@texSyntax`
+   - Result: Full LaTeX highlighting (commands, braces, math mode, etc.)
+
+3. **Highlight Group Selection**:
+   - Issue: 17 attribute types - which highlights for which?
+   - Analysis: Group by semantic purpose (annotation/structure/measurement/text)
+   - Solution: Type (annotations), Function (structure), Number (numeric), String (text)
+   - Result: Visual variety reflects semantic variety
+
+4. **Brace Toggle Syntax**:
+   - Issue: Braces use `[ob:1]` or `[ob:0]` (boolean on/off)
+   - Problem: Generic pattern allows any value, losing specificity
+   - Solution: Character class `[01]` in specialized pattern
+   - Result: Only valid toggle values highlighted correctly
+
+5. **Containment Whitelist**:
+   - Issue: New elements need addition to gabcSnippet contains= list
+   - Problem: Learned from Critical Fix (Iteration 17-19 issue)
+   - Solution: Added all 11 specialized attribute elements to contains= list
+   - Result: Elements actually highlight (not just defined)
+
+**Impact on System**:
+
+**Files Modified**:
+- `syntax/gabc.vim`: +65 lines
+  - Added 11 specialized attribute pattern groups
+  - Added 9 highlight links
+  - Updated gabcSnippet contains= list (+11 elements)
+  - Reorganized: specialized (line 279) before generic (line 352)
+
+**New Test Files**:
+- `tests/specialized_attributes_test.gabc`: 67 lines, 22 test cases, 47 examples
+- `tests/smoke/test_specialized_attributes.sh`: 145 lines, 8 validation tests
+
+**Integration**:
+- ✓ Works with all modifiers: `(f[cs:cresc.]'_g)`
+- ✓ Works with separation bars: `(f[alt:*]:)`
+- ✓ Works with custos: `(f[ll:0.5]+)`
+- ✓ Works with line breaks: `(f[cs:dim.]) z+`
+- ✓ Multiple attributes on same pitch: `(f[cs:f][nv:\it]g)`
+- ✓ Mixed specialized and generic: `(f[shape:virga][cs:forte]g)`
+- ✓ All 80+ existing plugin tests still passing
+
+**Backward Compatibility**:
+- No changes to generic attribute patterns
+- No changes to existing highlight groups
+- Pure addition - zero breaking changes
+- Generic attributes still work as fallback
+
+**System State**:
+- Total syntax elements: 64 (specialized adds 11)
+- Total highlight groups: 59 (specialized adds 11, reuses some)
+- Total test cases: 156+ (specialized adds 22)
+- Syntax file size: ~590 lines (was ~525)
+
+**Key Learnings**:
+
+1. **Semantic Highlighting**: Different attribute purposes deserve different highlight groups
+2. **Pattern Precedence**: Specific patterns MUST come before generic fallback patterns
+3. **Syntax Region Power**: Regions with `contains=` enable embedded syntax (LaTeX)
+4. **Automated Precedence Testing**: Pattern order is critical - test it explicitly
+5. **Highlight Group Variety**: Visual diversity improves semantic clarity
+
+**Documentation**:
+- 17 specialized attribute types across 8 semantic categories
+- Choral signs, braces, measurements, positioning, text, TeX code
+- Specialized patterns take precedence over generic fallback
+- Verbatim TeX attributes include full LaTeX syntax highlighting
+- Complete test coverage (47 examples, 8 validation tests)
+
+---
+
 ## Syntax Highlighting Reference Table
 
 ### Complete Element-to-Highlight Mapping
@@ -2772,6 +3063,25 @@ Future element additions must:
 | Justified line break | `z` | `gabcLineBreak` | `Statement` | Statement | Justified line break (default) |
 | Ragged line break | `Z` | `gabcLineBreak` | `Statement` | Statement | Ragged line break (non-justified) |
 | Line break suffix | `+` `-` `0` | `gabcLineBreakSuffix` | `Identifier` | Identifier | Force/prevent/zero-width (after z/Z) |
+| **Specialized Pitch Attributes** |
+| Choral sign (text) | `[cs:cresc.]` | `gabcAttrChoralSign` | `Type` | Type | Choral annotation (text) |
+| Choral sign (NABC) | `[cn:virga]` | `gabcAttrChoralNabc` | `Type` | Type | Choral annotation (neume code) |
+| Overbrace | `[ob:1]` `[ob:0]` | `gabcAttrBrace` | `Function` | Function | Grouping indicator (above staff) |
+| Underbrace | `[ub:1]` `[ub:0]` | `gabcAttrBrace` | `Function` | Function | Grouping indicator (below staff) |
+| Overcurly brace | `[ocb:1]` `[ocb:0]` | `gabcAttrBrace` | `Function` | Function | Decorative grouping brace |
+| Overcurly brace accent | `[ocba:1]` `[ocba:0]` | `gabcAttrBrace` | `Function` | Function | Decorative grouping with emphasis |
+| Stem length | `[ll:0.5]` | `gabcAttrStemLength` | `Number` | Number | Custom stem length adjustment |
+| Over ledger lines | `[oll:2]` | `gabcAttrLedgerLines` | `Function` | Function | Manual ledger lines (above staff) |
+| Under ledger lines | `[ull:2]` | `gabcAttrLedgerLines` | `Function` | Function | Manual ledger lines (below staff) |
+| Over slur | `[oslur:1]` | `gabcAttrSlur` | `Function` | Function | Manual slur (above staff) |
+| Under slur | `[uslur:1]` | `gabcAttrSlur` | `Function` | Function | Manual slur (below staff) |
+| Over episema tuning | `[oh:0.5]` | `gabcAttrEpisemaTune` | `Number` | Number | Fine-tune episema (above) |
+| Under episema tuning | `[uh:-0.5]` | `gabcAttrEpisemaTune` | `Number` | Number | Fine-tune episema (below) |
+| Above lines text | `[alt:*]` | `gabcAttrAboveLinesText` | `String` | String | Text annotation above staff |
+| Verbatim TeX (note) | `[nv:\it]` | `gabcAttrVerbatimNote` | `Special` | Special | LaTeX code (note level) |
+| Verbatim TeX (glyph) | `[gv:\color{red}]` | `gabcAttrVerbatimGlyph` | `Special` | Special | LaTeX code (glyph level) |
+| Verbatim TeX (element) | `[ev:\raise 1pt]` | `gabcAttrVerbatimElement` | `Special` | Special | LaTeX code (element level) |
+| **Generic Pitch Attributes** |
 | Divisio minor | `;` | `gabcBarMinor` | `Special` | Special | Half bar (minor division) |
 | Divisio minor suffix | `1-8` | `gabcBarMinorSuffix` | `Number` | Number | Minor bar variant (after ;) |
 | Divisio minima | `,` | `gabcBarMinima` | `Special` | Special | Quarter bar (minimal division) |
@@ -3684,10 +3994,23 @@ gabcNotes                               - Notes region: from %% to end of file
    │  ├─ gabcSpacingBracket             - Spacing delimiters: [ ] (in /[factor])
    │  ├─ gabcSpacingFactor              - Numeric factor: 2, 0.5, -1 (in /[...])
    │  │
-   │  ├─ gabcPitchAttrBracket           - Attribute delimiters: [ ] (in [attr:val])
-   │  ├─ gabcPitchAttrName              - Attribute name: shape, color, custom
-   │  ├─ gabcPitchAttrColon             - Attribute separator: :
-   │  ├─ gabcPitchAttrValue             - Attribute value: stroke, red, data
+   │  ├─ gabcAttrChoralSign             - Specialized: [cs:text] choral sign (text)
+   │  ├─ gabcAttrChoralNabc             - Specialized: [cn:code] choral sign (NABC)
+   │  ├─ gabcAttrBrace                  - Specialized: [ob/ub/ocb/ocba:0|1] braces (4 types)
+   │  ├─ gabcAttrStemLength             - Specialized: [ll:value] stem length adjustment
+   │  ├─ gabcAttrLedgerLines            - Specialized: [oll/ull:pos] ledger lines (over/under)
+   │  ├─ gabcAttrSlur                   - Specialized: [oslur/uslur:type] slurs (over/under)
+   │  ├─ gabcAttrEpisemaTune            - Specialized: [oh/uh:adj] episema tuning (over/under)
+   │  ├─ gabcAttrAboveLinesText         - Specialized: [alt:text] text above staff
+   │  ├─ gabcAttrVerbatimNote           - Specialized: [nv:tex] verbatim TeX (note level)
+   │  ├─ gabcAttrVerbatimGlyph          - Specialized: [gv:tex] verbatim TeX (glyph level)
+   │  ├─ gabcAttrVerbatimElement        - Specialized: [ev:tex] verbatim TeX (element level)
+   │  │  (verbatim TeX regions contain @texSyntax for LaTeX highlighting)
+   │  │
+   │  ├─ gabcPitchAttrBracket           - Generic: [ ] attribute delimiters
+   │  ├─ gabcPitchAttrName              - Generic: attribute name (fallback pattern)
+   │  ├─ gabcPitchAttrColon             - Generic: : attribute separator
+   │  ├─ gabcPitchAttrValue             - Generic: attribute value (fallback pattern)
    │  │  (region with paren matching disabled)
    │  │
    │  ├─ gabcBarDouble                  - Separation bar: :: (divisio finalis - double full bar)
@@ -3768,17 +4091,28 @@ gabcNotes                               - Notes region: from %% to end of file
 - **gabcLineBreakSuffix**: `+` (force), `-` (prevent), `0` (zero-width, z only)
 - Layout control distinct from liturgical structure
 
-#### 10. **Text Formatting**
+#### 10. **Specialized Pitch Attributes**
+- **Choral Signs**: `[cs:...]` metadata, `[cn:...]` NABC annotations
+- **Braces**: `[ob/ub:0|1]` over/under, `[ocb/ocba:0|1]` curly variants
+- **Stem Length**: `[ll:...]` manual stem adjustments
+- **Ledger Lines**: `[oll/ull:...]` over/under ledger positioning
+- **Slurs**: `[oslur/uslur:...]` over/under slur curvature
+- **Episema Tuning**: `[oh/uh:...]` over/under episema height
+- **Above-Lines Text**: `[alt:...]` text annotations above staff
+- **Verbatim TeX**: `[nv/gv/ev:...]` note/glyph/element LaTeX code
+- Semantic-specific highlighting for 17 specialized `[attr:value]` types
+
+#### 11. **Text Formatting**
 - **Basic Formatting**: Bold, italic, underline, small caps, teletype, color
 - **Lyric Control**: Centering `{...}`, translation `[...]`, elision `<e>`
 - **Special Tags**: EUOUAE markers, line break control, protrusion adjustment
 - **LaTeX Integration**: Verbatim `<v>` tags with embedded TeX syntax
 
-#### 11. **Staff Elements**
+#### 12. **Staff Elements**
 - **gabcClef**: Clef indicators (c1-c4, cb1-cb4, f1-f4)
 - **gabcClefConnector**: `@` for mid-line clef changes
 
-#### 12. **Lyric Text**
+#### 13. **Lyric Text**
 - **gabcSyllable**: Sung text syllables between notations
 - Container for all text formatting tags and special markers
 
@@ -3841,6 +4175,16 @@ gabcNotes                               - Notes region: from %% to end of file
 | `gabcCustos` | `Operator` | End-of-line pitch guide ([pitch]+) |
 | `gabcLineBreak` | `Statement` | Line break commands (z/Z) |
 | `gabcLineBreakSuffix` | `Identifier` | Line break modifiers (+/-/0) |
+| `gabcAttrChoralSign` | `Type` | Choral sign attribute ([cs:...]) |
+| `gabcAttrChoralNabc` | `Type` | NABC choral sign ([cn:...]) |
+| `gabcAttrBrace` | `Function` | Brace attributes (ob/ub/ocb/ocba) |
+| `gabcAttrStemLength` | `Number` | Stem length adjustment ([ll:...]) |
+| `gabcAttrLedgerLines` | `Function` | Ledger line positioning (oll/ull) |
+| `gabcAttrSlur` | `Function` | Slur positioning (oslur/uslur) |
+| `gabcAttrEpisemaTune` | `Number` | Episema height tuning (oh/uh) |
+| `gabcAttrAboveLinesText` | `String` | Above-lines text ([alt:...]) |
+| `gabcAttrVerbatimDelim` | `Special` | Verbatim TeX delimiters (nv/gv/ev) |
+| `gabcAttrVerbatim*` | `@texSyntax` | Embedded LaTeX in verbatim attrs |
 
 ### Notes on Syntax Organization
 
@@ -3882,6 +4226,6 @@ This hierarchical structure ensures accurate, context-aware highlighting through
 
 ---
 
-**Document Version**: 1.6  
+**Document Version**: 1.7  
 **Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim
