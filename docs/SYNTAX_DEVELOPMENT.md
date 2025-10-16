@@ -35,6 +35,7 @@
    - [Critical Fix: gabcSnippet Containment](#critical-fix-gabcsnippet-containment-iteration-17-19)
    - [Iteration 20: Specialized Pitch Attributes](#iteration-20-specialized-pitch-attributes-semantic-types)
    - [Iteration 21: Macros (Notation Shortcuts)](#iteration-21-macros-notation-shortcuts)
+   - [Appendix to Iteration 21: No-Custos Attribute](#appendix-to-iteration-21-no-custos-attribute)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -89,11 +90,14 @@ The syntax highlighting system was built through **21 iterations** starting from
 - Critical containment fix for gabcSnippet
 
 **Semantic Specialization** (Iterations 20-21):
-- Specialized pitch attributes (17 types across 8 categories)
+- Specialized pitch attributes (18 types across 8 categories)
 - Choral signs, braces, stem length, ledger lines, slurs
 - Episema tuning, above-lines text, verbatim TeX (3 scopes)
+- No-custos boolean flag attribute (appendix to Iteration 21)
 - Pattern precedence over generic fallback
 - Macros (3 scopes: note, glyph, element with 0-9 parameters)
+
+**Current Status**: 68 syntax elements, 64 highlight groups, 582 lines of VimScript
 
 Each iteration is documented with problem analysis, implementation details, testing strategy, challenges encountered, and solutions discovered.
 
@@ -3233,6 +3237,83 @@ This iteration completes the implementation of all gabcSnippet elements. The syn
 
 ---
 
+### Appendix to Iteration 21: No-Custos Attribute
+
+**Date**: October 16, 2025  
+**Commit**: `93faf29`
+
+**Problem**: GABC includes a special boolean flag attribute `[nocustos]` that suppresses automatic custos rendering at natural line break points. This attribute differs from other specialized attributes in that it takes no value - it's a simple presence/absence flag.
+
+**Specification**:
+
+The `[nocustos]` attribute:
+- **Syntax**: `[nocustos]` (no colon, no value)
+- **Purpose**: Prevents automatic custos generation when a line naturally breaks at that position
+- **Scope**: Can be applied to any pitch within gabcSnippet
+- **Type**: Boolean flag attribute (presence indicates true)
+- **Use case**: Fine control over custos placement in complex scores
+
+**Implementation**:
+
+```vim
+" NO CUSTOS: Suppress automatic custos rendering at line breaks
+" [nocustos] - prevents custos generation at natural line break point
+" Boolean flag attribute (no value required)
+syntax match gabcAttrNoCustos /\[nocustos\]/ contained containedin=gabcSnippet
+```
+
+**Highlight Assignment**:
+```vim
+highlight link gabcAttrNoCustos Keyword
+```
+
+**Design Decisions**:
+
+1. **Keyword Highlight Group**: Uses `Keyword` because it's a control directive that modifies rendering behavior, similar to control flow keywords in programming
+2. **Simple Pattern**: Straightforward literal match - no need for complex regex since it's a fixed string
+3. **Specialized vs Generic**: Defined as specialized attribute (before generic `[attr:value]`) to give it distinct highlighting
+4. **Pattern Precedence**: Positioned after verbatim TeX attributes, before macros (line 330)
+
+**Integration**:
+- Added to `gabcSnippet` contains list (line 88)
+- Syntax element count: 67 → 68
+- Highlight group count: 63 → 64
+
+**Testing**:
+
+**Test Coverage** (`tests/nocustos_test.gabc`):
+- 13 test cases covering various usage scenarios
+- 37 `[nocustos]` examples total
+- Integration tests with:
+  - Modifiers (v, r, ~)
+  - Other attributes ([alt:...], [cs:...])
+  - Line breaks (z, Z)
+  - Spacing (/.../)
+  - Bars (:, ;)
+  - Fusion (@)
+  - Custos markers (+)
+
+**Automated Validation** (`tests/smoke/test_nocustos.sh`):
+- 8 validation tests:
+  1. Pattern definition exists
+  2. Correct containment flags
+  3. Highlight link exists
+  4. Correct highlight group (Keyword)
+  5. Inclusion in gabcSnippet contains list
+  6. Adequate test coverage (≥10 examples)
+  7. Correct pattern precedence
+  8. No syntax errors
+- All 8 tests passing
+- All 29+ plugin tests passing (no regressions)
+
+**Impact**:
+- Completes specialized attribute support in gabcSnippet
+- Provides fine-grained control over custos rendering
+- Maintains semantic distinction between different attribute types
+- Boolean flag pattern can serve as template for similar attributes
+
+---
+
 ## Syntax Highlighting Reference Table
 
 ### Complete Element-to-Highlight Mapping
@@ -3347,6 +3428,7 @@ This iteration completes the implementation of all gabcSnippet elements. The syn
 | Verbatim TeX (note) | `[nv:\it]` | `gabcAttrVerbatimNote` | `Special` | Special | LaTeX code (note level) |
 | Verbatim TeX (glyph) | `[gv:\color{red}]` | `gabcAttrVerbatimGlyph` | `Special` | Special | LaTeX code (glyph level) |
 | Verbatim TeX (element) | `[ev:\raise 1pt]` | `gabcAttrVerbatimElement` | `Special` | Special | LaTeX code (element level) |
+| No custos flag | `[nocustos]` | `gabcAttrNoCustos` | `Keyword` | Keyword | Suppress automatic custos rendering |
 | **Macros (Notation Shortcuts)** |
 | Note-level macro | `[nm0]` - `[nm9]` | `gabcMacroNote` | `Function` + `Number` | Function, Number | Predefined note pattern (identifier: Function, digit: Number) |
 | Glyph-level macro | `[gm0]` - `[gm9]` | `gabcMacroGlyph` | `Function` + `Number` | Function, Number | Predefined glyph pattern (identifier: Function, digit: Number) |
@@ -4276,6 +4358,7 @@ gabcNotes                               - Notes region: from %% to end of file
    │  ├─ gabcAttrVerbatimGlyph          - Specialized: [gv:tex] verbatim TeX (glyph level)
    │  ├─ gabcAttrVerbatimElement        - Specialized: [ev:tex] verbatim TeX (element level)
    │  │  (verbatim TeX regions contain @texSyntax for LaTeX highlighting)
+   │  ├─ gabcAttrNoCustos               - Specialized: [nocustos] suppress custos (boolean flag)
    │  │
    │  ├─ gabcMacroNote                  - Macro: [nm0-9] note-level shortcuts
    │  │  ├─ gabcMacroIdentifier         - Identifier: nm (highlighted as Function)
@@ -4380,7 +4463,8 @@ gabcNotes                               - Notes region: from %% to end of file
 - **Episema Tuning**: `[oh/uh:...]` over/under episema height
 - **Above-Lines Text**: `[alt:...]` text annotations above staff
 - **Verbatim TeX**: `[nv/gv/ev:...]` note/glyph/element LaTeX code
-- Semantic-specific highlighting for 17 specialized `[attr:value]` types
+- **No Custos Flag**: `[nocustos]` boolean flag to suppress automatic custos
+- Semantic-specific highlighting for 18 specialized `[attr:value]` types (17 value-based + 1 flag)
 
 #### 11. **Macros (Notation Shortcuts)**
 - **gabcMacroNote**: `[nm0]` through `[nm9]` - note-level shortcuts
@@ -4476,6 +4560,7 @@ gabcNotes                               - Notes region: from %% to end of file
 | `gabcAttrAboveLinesText` | `String` | Above-lines text ([alt:...]) |
 | `gabcAttrVerbatimDelim` | `Special` | Verbatim TeX delimiters (nv/gv/ev) |
 | `gabcAttrVerbatim*` | `@texSyntax` | Embedded LaTeX in verbatim attrs |
+| `gabcAttrNoCustos` | `Keyword` | No custos flag ([nocustos]) |
 | `gabcMacroIdentifier` | `Function` | Macro identifier (nm/gm/em) |
 | `gabcMacroNumber` | `Number` | Macro parameter digit (0-9) |
 
