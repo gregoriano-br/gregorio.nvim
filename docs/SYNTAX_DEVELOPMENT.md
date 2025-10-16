@@ -5442,6 +5442,274 @@ nabc: vi(ha);
 
 ---
 
-**Document Version**: 2.1  
+## Iteration 25: NABC Glyph Descriptors (October 16, 2025)
+
+### Context
+
+**Commit**: `ad45e17`  
+**Branch**: `syntax-bootstrap`
+
+Implementação de estruturas container para agrupar elementos NABC: **basic glyph descriptor** e **complex glyph descriptor**. Estas estruturas fornecem hierarquia sintática adequada para os elementos NABC, permitindo futuras adições sintáticas que operem sobre estes containers.
+
+### NABC Glyph Descriptors Specification
+
+#### Basic Glyph Descriptor
+
+Unidade fundamental da notação NABC, composta de:
+```
+neume + optional(glyph_modifier) + optional(pitch_descriptor)
+```
+
+**Exemplos**:
+- `vi` - neuma simples (virga)
+- `viS` - neuma com modificador
+- `viha` - neuma com pitch descriptor
+- `viS2ha` - neuma com modificador e pitch descriptor
+
+#### Complex Glyph Descriptor
+
+Combinação de 2 ou mais basic glyph descriptors concatenados pelo delimitador `!`:
+```
+basic_glyph_descriptor + repeat(! + basic_glyph_descriptor)
+```
+
+**Exemplos**:
+- `vi!pu` - dois descriptors básicos
+- `vi!pu!ta` - três descriptors básicos
+- `viS!puG` - com modificadores
+- `viha!puhm` - com pitch descriptors
+- `viS2ha!puG3hm` - descriptor complexo completo
+
+### Implementation
+
+#### Basic Glyph Descriptor Pattern
+
+```vim
+syntax match nabcBasicGlyphDescriptor 
+  \ /\(vi\|pu\|ta\|gr\|cl\|pe\|po\|to\|ci\|sc\|pf\|sf\|tr\|st\|ds\|ts\|tg\|bv\|tv\|pq\|pr\|pi\|vs\|or\|sa\|ql\|qi\|pt\|ni\|oc\|un\)\([SGM\->~][1-9]\?\)\?\(h[a-np]\)\?/
+  \ contained containedin=nabcSnippet
+  \ contains=nabcNeume,nabcGlyphModifier,nabcGlyphModifierNumber,nabcPitchDescriptorH,nabcPitchDescriptorPitch
+  \ transparent
+```
+
+**Pattern Breakdown**:
+1. **Neume code**: `\(vi\|pu\|...\)` - matches any valid NABC neume code
+2. **Optional modifier**: `\([SGM\->~][1-9]\?\)\?` - modifier character + optional digit
+3. **Optional pitch**: `\(h[a-np]\)\?` - pitch descriptor
+
+**Transparency**: Marcado como `transparent` para permitir que os elementos internos sejam realçados individualmente enquanto mantém a estrutura agrupada.
+
+#### Complex Glyph Descriptor Delimiter
+
+```vim
+syntax match nabcComplexGlyphDelimiter /!/ contained containedin=nabcSnippet
+
+highlight link nabcComplexGlyphDelimiter Delimiter
+```
+
+**Highlight**: O delimitador `!` é realçado como `Delimiter` (geralmente ciano/azul claro), distinguindo-o visualmente dos elementos do neuma.
+
+#### Updated nabcSnippet
+
+```vim
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation 
+  \ contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter
+```
+
+O `nabcSnippet` agora contém apenas as estruturas de alto nível (descriptors e delimitador), simplificando a hierarquia sintática.
+
+### Syntax Tree
+
+```
+nabc_snippet
+├── nabc_basic_glyph_descriptor
+│   ├── nabc_neume
+│   ├── optional(nabc_glyph_modifier)
+│   └── optional(nabc_pitch_descriptor)
+└── nabc_complex_glyph_descriptor
+    ├── nabc_basic_glyph_descriptor #1
+    ├── nabc_complex_glyph_delimiter (!)
+    ├── nabc_basic_glyph_descriptor #2
+    ├── nabc_complex_glyph_delimiter (!)
+    └── nabc_basic_glyph_descriptor #n
+```
+
+### Testing
+
+#### Test Cases
+
+Criamos 14 casos de teste em `tests/test_nabc_glyph_descriptors.sh`:
+
+**Syntax Pattern Tests**:
+1. nabcBasicGlyphDescriptor exists
+2. nabcComplexGlyphDelimiter exists
+3. Delimiter highlight exists
+
+**Basic Glyph Descriptor Tests**:
+4. Simple neume: `vi`
+5. Neume with modifier: `viS`
+6. Neume with numbered modifier: `viS2`
+7. Neume with pitch: `viha`
+8. Complete: `viS2ha`
+
+**Complex Glyph Descriptor Tests**:
+9. Delimiter in `vi!pu`
+10. Multiple delimiters: `vi!pu!ta`
+
+**Integration Tests**:
+11. `vi!pu` matches basic+delimiter
+12. `viS!puG` matches with modifiers
+13. `viha!puhm` matches with pitch
+14. `viS2ha!puG3hm` full complex
+
+#### Test Results
+```bash
+$ ./tests/test_nabc_glyph_descriptors.sh
+Testing NABC Glyph Descriptors...
+==================================
+
+Syntax Pattern Existence Tests:
+✓ Test 1: nabcBasicGlyphDescriptor exists - PASSED
+✓ Test 2: nabcComplexGlyphDelimiter exists - PASSED
+✓ Test 3: Delimiter highlight exists - PASSED
+
+Basic Glyph Descriptor Pattern Tests:
+✓ Test 4: Simple neume: vi - PASSED
+✓ Test 5: Neume with modifier: viS - PASSED
+✓ Test 6: Neume with numbered modifier: viS2 - PASSED
+✓ Test 7: Neume with pitch: viha - PASSED
+✓ Test 8: Complete: viS2ha - PASSED
+
+Complex Glyph Descriptor Pattern Tests:
+✓ Test 9: Delimiter in vi!pu - PASSED
+✓ Test 10: Multiple delimiters: vi!pu!ta - PASSED
+
+Integration Tests (complete structures):
+✓ Test 11: vi!pu matches basic+delimiter - PASSED
+✓ Test 12: viS!puG matches with modifiers - PASSED
+✓ Test 13: viha!puhm matches with pitch - PASSED
+✓ Test 14: viS2ha!puG3hm full complex - PASSED
+
+==================================
+Results: 14/14 tests passed
+All tests passed!
+```
+
+### Visual Examples
+
+#### Basic Glyph Descriptors
+
+**Input**:
+```gabc
+Te(c|vi)
+De(d|viS)
+um(e|viS2)
+lau(f|viha)
+da(g|viS2ha)
+```
+
+**Syntax Highlighting**:
+```
+Te(c|vi)
+     ^^
+     └── nabcNeume (Keyword/Rosa) inside transparent nabcBasicGlyphDescriptor
+
+De(d|viS)
+     ^^^
+     ||└─ nabcGlyphModifier (SpecialChar/Amarelo)
+     |└── nabcNeume (Keyword/Rosa)
+     └─── transparent nabcBasicGlyphDescriptor
+
+da(g|viS2ha)
+     ^^^^^^
+     |||||└─ nabcPitchDescriptorPitch (Identifier/Ciano)
+     ||||└── nabcPitchDescriptorH (Function/Magenta)
+     |||└─── nabcGlyphModifierNumber (Number/Laranja)
+     ||└──── nabcGlyphModifier (SpecialChar/Amarelo)
+     |└───── nabcNeume (Keyword/Rosa)
+     └────── transparent nabcBasicGlyphDescriptor
+```
+
+#### Complex Glyph Descriptors
+
+**Input**:
+```gabc
+Glo(c|vi!pu)
+ri(d|vi!pu!ta)
+a(e|viS!puG)
+tu(f|viha!puhm)
+a(g|viS2ha!puG3hm)
+```
+
+**Syntax Highlighting**:
+```
+Glo(c|vi!pu)
+      ^^ ^^
+      || |└─ basic descriptor #2
+      || └── Delimiter (Delimiter/Ciano claro)
+      |└──── basic descriptor #1
+      └───── complex glyph descriptor structure
+
+a(g|viS2ha!puG3hm)
+    ^^^^^^ ^^^^^^
+    |||||  |||||└─ pitch descriptor (h + m)
+    |||||  ||||└── modifier number (3)
+    |||||  |||└─── modifier (G)
+    |||||  ||└──── neume (pu)
+    |||||  |└───── complex delimiter (!)
+    |||||  └────── basic descriptor #2
+    ||||└───────── pitch descriptor (h + a)
+    |||└────────── modifier number (2)
+    ||└─────────── modifier (S)
+    |└──────────── neume (vi)
+    └───────────── basic descriptor #1
+```
+
+### Design Rationale
+
+#### Why Container Structures?
+
+1. **Hierarchical Organization**: Agrupa elementos relacionados logicamente
+2. **Future Extensibility**: Permite adicionar novos elementos que operem sobre descriptors
+3. **Semantic Clarity**: Torna explícita a estrutura básica da notação NABC
+4. **Parser Foundation**: Prepara terreno para futuros parsers e ferramentas
+
+#### Why Transparent Basic Descriptor?
+
+O `nabcBasicGlyphDescriptor` é transparente porque:
+- Não precisa de realce próprio (os elementos internos já são realçados)
+- Mantém a hierarquia sem adicionar camadas visuais desnecessárias
+- Permite ferramentas futuras identificarem a estrutura sem afetar o realce atual
+
+#### Why Highlight the Delimiter?
+
+O delimitador `!` é realçado porque:
+- É semanticamente importante (indica concatenação)
+- Ajuda visualmente a separar descriptors complexos
+- Usa grupo `Delimiter` (convenção padrão para delimitadores estruturais)
+
+### Related Patterns
+
+- **NABC Neume** (Iteration 21): Códigos de neuma que formam a base dos descriptors
+- **NABC Glyph Modifier** (Iteration 23): Modificadores incluídos no basic descriptor
+- **NABC Pitch Descriptor** (Iteration 24): Pitch descriptors incluídos no basic descriptor
+
+### Notes
+
+1. **Transparent vs Highlighted**: Basic descriptor é transparent; complex delimiter é highlighted
+2. **Pattern Order**: O pattern do basic descriptor deve vir antes de patterns individuais no contains
+3. **Container Benefits**: Facilita identificação de unidades completas para processamento futuro
+4. **Delimiter Choice**: `!` é único e visualmente distintivo, ideal para concatenação
+5. **Extensibility**: Estrutura permite adicionar volume descriptors e outros elementos no futuro
+
+### Files Modified
+
+- `syntax/gabc.vim`: Adicionados patterns `nabcBasicGlyphDescriptor` e `nabcComplexGlyphDelimiter`
+- `tests/test_nabc_glyph_descriptors.sh`: Script de teste criado (14 testes)
+- `examples/nabc_glyph_descriptors.gabc`: Arquivo de exemplo criado
+
+---
+
+**Document Version**: 2.2  
 **Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim
