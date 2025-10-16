@@ -1,0 +1,67 @@
+name: Specialized Attributes Test;
+%%
+% Test 1: Choral signs
+(f[cs:crescendo]g[cn:virga]h) text;
+
+% Test 2: Braces - overbrace
+(f[ob:1]g[ob:0]h) text;
+
+% Test 3: Braces - underbrace
+(f[ub:1]g[ub:0]h) text;
+
+% Test 4: Braces - overcurly brace
+(f[ocb:1]g[ocb:0]h) text;
+
+% Test 5: Braces - overcurly brace with accent
+(f[ocba:1]g[ocba:0]h) text;
+
+% Test 6: Stem length adjustment
+(a[ll:0.5]b[ll:1.0]c) text;
+
+% Test 7: Custom ledger lines - over
+(m[oll:1]n[oll:2]p) text;
+
+% Test 8: Custom ledger lines - under
+(a[ull:1]b[ull:2]c) text;
+
+% Test 9: Simple slurs - over
+(f[oslur:1]g[oslur:2]h) text;
+
+% Test 10: Simple slurs - under
+(f[uslur:1]g[uslur:2]h) text;
+
+% Test 11: Horizontal episema tuning - over
+(f[oh:0.5]g[oh:-0.5]h) text;
+
+% Test 12: Horizontal episema tuning - under
+(f[uh:0.5]g[uh:-0.5]h) text;
+
+% Test 13: Above lines text (alternative to <alt> tag)
+(f[alt:cresc.]g[alt:dim.]h) text;
+
+% Test 14: Verbatim TeX - note level
+(f[nv:\scriptsize]g[nv:\textit{text}]h) text;
+
+% Test 15: Verbatim TeX - glyph level
+(f[gv:\color{red}]g[gv:\footnotesize]h) text;
+
+% Test 16: Verbatim TeX - element level
+(f[ev:\hspace{2pt}]g[ev:\raise 1pt]h) text;
+
+% Test 17: Complex TeX code
+(f[nv:\textbf{\Large Dóminus}]g) text;
+
+% Test 18: Multiple attributes on same pitch
+(f[cs:cresc.][nv:\scriptsize]g) text;
+
+% Test 19: Mixed specialized and generic attributes
+(f[shape:virga][cs:forte]g[color:red][alt:*)h) text;
+
+% Test 20: All brace types together
+(f[ob:1][ub:1]g[ocb:1]h[ocba:1]i) text;
+
+% Test 21: Edge cases - empty values (should still highlight)
+(f[cs:]g[alt:]h) text;
+
+% Test 22: Integration with other elements
+(f[cs:cresc.]g'_[nv:\textit{rit.}]h:) text(i+) z+;

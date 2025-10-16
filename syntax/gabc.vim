@@ -85,7 +85,7 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " Note: The /\@ construct is a negative zero-width assertion in Vim regex
 " Matches content inside parentheses (entire musical snippet), excluding the parentheses themselves
 " This allows for highlighting of its contained elements (pitches, modifiers, etc.)
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcModifierEpisema,gabcModifierEpisemaNumber,gabcModifierIctus,gabcModifierIctusNumber,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue,gabcBarDouble,gabcBarDotted,gabcBarMaior,gabcBarMinor,gabcBarMinima,gabcBarMinimaOcto,gabcBarVirgula,gabcBarMinorSuffix,gabcBarZeroSuffix,gabcCustos,gabcLineBreak,gabcLineBreakSuffix transparent
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcModifierEpisema,gabcModifierEpisemaNumber,gabcModifierIctus,gabcModifierIctusNumber,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcAttrChoralSign,gabcAttrChoralNabc,gabcAttrBrace,gabcAttrStemLength,gabcAttrLedgerLines,gabcAttrSlur,gabcAttrEpisemaTune,gabcAttrAboveLinesText,gabcAttrVerbatimNote,gabcAttrVerbatimGlyph,gabcAttrVerbatimElement,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue,gabcBarDouble,gabcBarDotted,gabcBarMaior,gabcBarMinor,gabcBarMinima,gabcBarMinimaOcto,gabcBarVirgula,gabcBarMinorSuffix,gabcBarZeroSuffix,gabcCustos,gabcLineBreak,gabcLineBreakSuffix transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -267,6 +267,67 @@ syntax match gabcSpacingFactor /\(\[\)\@<=-\?\d\+\(\.\d\+\)\?/ contained contain
 " Zero-width space: ! (when alone or followed by space for non-breaking)
 " Must come AFTER /! to not interfere
 syntax match gabcSpacingZero /!/ contained containedin=gabcSnippet
+
+" ============================================================================
+" SPECIALIZED PITCH ATTRIBUTES: Semantic attribute types with specific meanings
+" These MUST be defined BEFORE generic attributes to take precedence
+" ============================================================================
+
+" CHORAL SIGNS: Text annotations for choir directors
+" [cs:text] - choral sign with custom text
+" [cn:code] - choral sign with NABC neume code
+syntax match gabcAttrChoralSign /\[cs:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrChoralNabc /\[cn:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" BRACES: Grouping indicators for neumes
+" [ob:1] or [ob:0] - overbrace (above staff)
+" [ub:1] or [ub:0] - underbrace (below staff)  
+" [ocb:1] or [ocb:0] - overcurly brace
+" [ocba:1] or [ocba:0] - overcurly brace with accent
+syntax match gabcAttrBrace /\[ob:[01]\]/ contained containedin=gabcSnippet
+syntax match gabcAttrBrace /\[ub:[01]\]/ contained containedin=gabcSnippet
+syntax match gabcAttrBrace /\[ocb:[01]\]/ contained containedin=gabcSnippet
+syntax match gabcAttrBrace /\[ocba:[01]\]/ contained containedin=gabcSnippet
+
+" STEM LENGTH: Custom stem length for bottom line notes
+" [ll:value] - adjusts vertical stem extension
+syntax match gabcAttrStemLength /\[ll:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" CUSTOM LEDGER LINES: Manual ledger line positioning
+" [oll:position] - over ledger lines (above staff)
+" [ull:position] - under ledger lines (below staff)
+syntax match gabcAttrLedgerLines /\[oll:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrLedgerLines /\[ull:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" SIMPLE SLURS: Manual slur/ligature marks
+" [oslur:type] - over slur (above staff)
+" [uslur:type] - under slur (below staff)
+syntax match gabcAttrSlur /\[oslur:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrSlur /\[uslur:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" HORIZONTAL EPISEMA TUNING: Fine-tune episema positioning
+" [oh:adjustment] - over horizontal episema
+" [uh:adjustment] - under horizontal episema
+syntax match gabcAttrEpisemaTune /\[oh:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrEpisemaTune /\[uh:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" ABOVE LINES TEXT: Text displayed above staff (alternative to <alt> tag)
+" [alt:text] - text annotation above staff
+syntax match gabcAttrAboveLinesText /\[alt:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" VERBATIM TEX: Embedded TeX code at different scopes
+" [nv:tex] - note level verbatim TeX
+" [gv:tex] - glyph level verbatim TeX  
+" [ev:tex] - element level verbatim TeX
+" These use region syntax to enable LaTeX highlighting within the value
+syntax region gabcAttrVerbatimNote matchgroup=gabcAttrVerbatimDelim start=/\[nv:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
+syntax region gabcAttrVerbatimGlyph matchgroup=gabcAttrVerbatimDelim start=/\[gv:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
+syntax region gabcAttrVerbatimElement matchgroup=gabcAttrVerbatimDelim start=/\[ev:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
+
+" ============================================================================
+" GENERIC PITCH ATTRIBUTES: Fallback for unrecognized attribute types
+" Defined AFTER specialized attributes to catch remaining cases
+" ============================================================================
 
 " GABC PITCH ATTRIBUTES: Generic [attribute:value] syntax
 " This is a general mechanism for pitch-level metadata annotations
@@ -457,8 +518,35 @@ highlight link gabcSpacingZero Operator
 highlight link gabcSpacingBracket Delimiter
 highlight link gabcSpacingFactor Number
 
+" GABC specialized pitch attributes: Semantic attribute types
+" Choral signs: annotations for choir directors
+highlight link gabcAttrChoralSign Type
+highlight link gabcAttrChoralNabc Type
+
+" Braces: grouping indicators
+highlight link gabcAttrBrace Function
+
+" Stem length: custom stem adjustment
+highlight link gabcAttrStemLength Number
+
+" Ledger lines: manual positioning
+highlight link gabcAttrLedgerLines Function
+
+" Slurs: manual ligature marks
+highlight link gabcAttrSlur Function
+
+" Episema tuning: fine positioning
+highlight link gabcAttrEpisemaTune Number
+
+" Above lines text: staff annotations
+highlight link gabcAttrAboveLinesText String
+
+" Verbatim TeX: embedded LaTeX code (delimiters only, content uses @texSyntax)
+highlight link gabcAttrVerbatimDelim Special
+
 " GABC pitch attributes: Generic [attribute:value] syntax for pitch-level metadata
 " Examples: [shape:stroke], [color:red], [custom:data]
+" These are fallback patterns for attributes not caught by specialized patterns above
 highlight link gabcPitchAttrBracket Delimiter
 highlight link gabcPitchAttrName PreProc
 highlight link gabcPitchAttrColon Special
