@@ -34,6 +34,7 @@
    - [Iteration 19: Line Breaks (Layout Control)](#iteration-19-line-breaks-layout-control)
    - [Critical Fix: gabcSnippet Containment](#critical-fix-gabcsnippet-containment-iteration-17-19)
    - [Iteration 20: Specialized Pitch Attributes](#iteration-20-specialized-pitch-attributes-semantic-types)
+   - [Iteration 21: Macros (Notation Shortcuts)](#iteration-21-macros-notation-shortcuts)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -54,7 +55,7 @@ The goal is to provide a reference for developers (human or AI) building similar
 
 ### Development Journey
 
-The syntax highlighting system was built through **20 iterations** starting from the absolute basics:
+The syntax highlighting system was built through **21 iterations** starting from the absolute basics:
 
 **Foundation** (Iterations 0-2):
 - File structure and comments
@@ -87,11 +88,12 @@ The syntax highlighting system was built through **20 iterations** starting from
 - Line breaks (layout control: z, Z with suffixes)
 - Critical containment fix for gabcSnippet
 
-**Semantic Specialization** (Iteration 20):
+**Semantic Specialization** (Iterations 20-21):
 - Specialized pitch attributes (17 types across 8 categories)
 - Choral signs, braces, stem length, ledger lines, slurs
 - Episema tuning, above-lines text, verbatim TeX (3 scopes)
 - Pattern precedence over generic fallback
+- Macros (3 scopes: note, glyph, element with 0-9 parameters)
 
 Each iteration is documented with problem analysis, implementation details, testing strategy, challenges encountered, and solutions discovered.
 
@@ -2967,6 +2969,270 @@ Created comprehensive test file with 22 test cases:
 
 ---
 
+### Iteration 21: Macros (Notation Shortcuts)
+
+**Date**: October 16, 2025  
+**Commit**: `af4ca70`
+
+**Problem**: GABC supports predefined notation macros as shortcuts for frequently used notation patterns. These macros exist at three scopes (note, glyph, element) and take a single digit parameter (0-9). Macros needed syntax highlighting to distinguish the macro identifier from its numeric parameter.
+
+**Macro Specification**:
+
+GABC provides 30 predefined macro slots organized in three scopes:
+
+**1. Note-level macros** (10 slots):
+- `[nm0]` through `[nm9]` - macros applied at note level
+- Examples: custom note shapes, special articulations
+
+**2. Glyph-level macros** (10 slots):
+- `[gm0]` through `[gm9]` - macros applied at glyph level
+- Examples: compound neume patterns, ligatures
+
+**3. Element-level macros** (10 slots):
+- `[em0]` through `[em9]` - macros applied at element level
+- Examples: full notation sequences, complex groupings
+
+**Macro Semantics**:
+- **Identifier** (nm/gm/em): Function-like name indicating macro scope
+- **Number** (0-9): Parameter/slot number for the specific macro
+- Syntax resembles function calls: `identifier(parameter)`
+- Visual distinction helps identify macro usage vs other attributes
+
+**Implementation**:
+
+**Main Macro Patterns** (3 patterns for 3 scopes):
+```vim
+" Note-level macro: [nm#] where # is 0-9
+syntax match gabcMacroNote /\[nm[0-9]\]/ contained containedin=gabcSnippet contains=gabcMacroIdentifier,gabcMacroNumber
+
+" Glyph-level macro: [gm#] where # is 0-9
+syntax match gabcMacroGlyph /\[gm[0-9]\]/ contained containedin=gabcSnippet contains=gabcMacroIdentifier,gabcMacroNumber
+
+" Element-level macro: [em#] where # is 0-9
+syntax match gabcMacroElement /\[em[0-9]\]/ contained containedin=gabcSnippet contains=gabcMacroIdentifier,gabcMacroNumber
+```
+
+**Component Patterns** (2 patterns for fine-grained highlighting):
+```vim
+" Macro identifier: nm, gm, or em after opening bracket
+" Uses positive lookbehind to match only after [
+syntax match gabcMacroIdentifier /\[\@<=\(nm\|gm\|em\)/ contained
+
+" Macro number: digit 0-9 after identifier
+" Uses positive lookbehind to match only after nm, gm, or em
+syntax match gabcMacroNumber /\([nge]m\)\@<=[0-9]/ contained
+```
+
+**Pattern Breakdown**:
+- `/\[nm[0-9]\]/`: Matches `[nm` followed by single digit 0-9, then `]`
+- `/\[\@<=/`: Positive lookbehind ensures match only after `[`
+- `/\(nm\|gm\|em\)/`: Alternation matches any of the three identifiers
+- `/\([nge]m\)\@<=/`: Lookbehind matches after `nm`, `gm`, or `em`
+- `[0-9]`: Character class matches single digit
+
+**Updated gabcSnippet Container**:
+```vim
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation \
+  contains=...,gabcMacroNote,gabcMacroGlyph,gabcMacroElement,... transparent
+```
+
+**Highlight Links**:
+```vim
+" Macro identifier (function-like semantic)
+highlight link gabcMacroIdentifier Function
+
+" Macro number (parameter-like semantic)
+highlight link gabcMacroNumber Number
+```
+
+**Key Design Decisions**:
+
+1. **Function + Number Highlighting**:
+   - **Identifier → Function**: Macros act like function calls (semantic operation)
+   - **Number → Number**: Digit is a parameter/argument to the macro
+   - Visual distinction: identifier stands out, parameter is numeric data
+   - Consistent with programming language conventions
+
+2. **Component Pattern Strategy**:
+   - Main patterns (`gabcMacroNote/Glyph/Element`) define scope and structure
+   - Component patterns provide fine-grained highlighting within macro
+   - `contains=gabcMacroIdentifier,gabcMacroNumber` enables nested highlighting
+   - Allows different colors for identifier vs number
+
+3. **Pattern Precedence**:
+   - Macros defined AFTER verbatim TeX attributes (line 333)
+   - Macros defined BEFORE generic attributes (line 366)
+   - Position ensures specialized macro pattern matches before generic `[attr:value]`
+   - Order: specialized → macros → generic fallback
+
+4. **Lookbehind Usage**:
+   - Identifier: `\[\@<=` matches only after `[` (avoids false matches)
+   - Number: `\([nge]m\)\@<=` matches only after valid identifier
+   - Prevents number pattern from capturing unrelated digits
+   - Ensures tight coupling between identifier and number
+
+5. **Character Class for Identifiers**:
+   - `[nge]m` in lookbehind matches `nm`, `gm`, or `em` efficiently
+   - Captures all three identifier patterns in one regex
+   - More efficient than three separate lookbehinds
+
+**Testing Strategy**:
+
+Created comprehensive test file with 13 test cases:
+
+```gabc
+% Test 1-3: All digits 0-9 for each macro type
+(f[nm0]g[nm1]h[nm2]i[nm3]j[nm4]k[nm5]l[nm6]m[nm7]n[nm8]p[nm9]) text;
+(f[gm0]g[gm1]h[gm2]i[gm3]j[gm4]k[gm5]l[gm6]m[gm7]n[gm8]p[gm9]) text;
+(f[em0]g[em1]h[em2]i[em3]j[em4]k[em5]l[em6]m[em7]n[em8]p[em9]) text;
+
+% Test 4: Multiple macros on same pitch
+(f[nm0][gm1][em2]g) text;
+
+% Test 5: Macros with modifiers
+(fv[nm0]g'[gm1]h_[em2]) text;
+
+% Test 6: Macros with spacing
+(f[nm0]/g[gm1]//h[em2]) text;
+
+% Test 7: Macros with bars
+(f[nm0]:g[gm1];h[em2],) text;
+
+% Test 8: Macros with custos
+(f[nm0]g+) text;
+
+% Test 9: Macros with line breaks
+(f[nm0]) text(g) z+ (h[gm1]) text;
+
+% Test 10: Macros with other attributes
+(f[nm0][shape:virga]g[cs:forte][gm1]h[alt:*][em2]) text;
+
+% Test 11: Macros with fusions
+(f@g[nm0]@h) text;
+(@[fgh][em2]) text;
+
+% Test 13: Complex integration
+(f[nm0][cs:cresc.]g'_[gm1][nv:\textit{text}]h[em2][alt:*]:) text(i[nm3]+) z+;
+```
+
+**Automated Validation** (`test_macros.sh` - 8 tests):
+1. ✓ All 3 macro pattern definitions present
+2. ✓ Both component patterns defined (Identifier, Number)
+3. ✓ Correct highlight links (Function, Number)
+4. ✓ All 3 macro elements in gabcSnippet contains= list
+5. ✓ Test file has 10+ examples of each type (30 nm, 28 gm, 27 em)
+6. ✓ All digits 0-9 tested for each macro type
+7. ✓ Pattern precedence correct (after verbatim TeX, before generic)
+8. ✓ No Vim syntax errors
+
+**Test Coverage**:
+- **Total examples**: 85 macros across 13 test cases
+- **Note-level**: 30 examples ([nm0] through [nm9])
+- **Glyph-level**: 28 examples ([gm0] through [gm9])
+- **Element-level**: 27 examples ([em0] through [em9])
+- **Integration tests**: Macros with all other GABC features
+
+**Visual Example**:
+
+```gabc
+(f[nm0]g[gm1]h[em2]) text;
+```
+
+**Highlighting**:
+- `[` `]` → matched by macro pattern, not separately highlighted
+- `nm` → **Function** (macro identifier)
+- `0` → **Number** (macro parameter)
+- `gm` → **Function** (macro identifier)
+- `1` → **Number** (macro parameter)
+- `em` → **Function** (macro identifier)
+- `2` → **Number** (macro parameter)
+
+**Challenges Solved**:
+
+1. **Component Highlighting**:
+   - Issue: Need different colors for identifier vs number within `[nm0]`
+   - Problem: Single pattern cannot have multiple highlight groups
+   - Solution: Use `contains=` to include component patterns
+   - Result: Main pattern provides structure, components provide highlighting
+
+2. **Number Scope Isolation**:
+   - Issue: Pattern `/[0-9]/` would match all digits (pitch suffixes, bar suffixes, etc.)
+   - Problem: Too broad - captures unrelated numbers
+   - Solution: Lookbehind `/\([nge]m\)\@<=[0-9]/` - only after identifier
+   - Result: Numbers only highlighted in macro context
+
+3. **Pattern Precedence**:
+   - Issue: Generic `[attr:value]` could match macros first
+   - Problem: Macros would lose semantic highlighting
+   - Solution: Define macros BEFORE generic attributes (line 333 vs 366)
+   - Result: Macros get specialized highlighting, generic is fallback
+
+4. **Identifier Efficiency**:
+   - Issue: Three separate lookbehinds (`nm|gm|em`) would be verbose
+   - Problem: Pattern repetition, harder to maintain
+   - Solution: Character class `[nge]m` matches all three efficiently
+   - Result: Concise, efficient pattern matching
+
+5. **Test Script Precision**:
+   - Issue: Need to verify precedence order programmatically
+   - Problem: Pattern order is critical but easy to break
+   - Solution: Automated test extracts line numbers, validates order
+   - Result: Regression prevention for pattern precedence
+
+**Impact on System**:
+
+**Files Modified**:
+- `syntax/gabc.vim`: +18 lines
+  - Added 3 main macro patterns (Note, Glyph, Element)
+  - Added 2 component patterns (Identifier, Number)
+  - Added 2 highlight links
+  - Updated gabcSnippet contains= list (+3 elements)
+
+**New Test Files**:
+- `tests/macros_test.gabc`: 67 lines, 13 test cases, 85 macro examples
+- `tests/smoke/test_macros.sh`: 141 lines, 8 automated validations
+
+**Integration**:
+- ✓ Works with all modifiers: `(f[nm0]v'_g)`
+- ✓ Works with spacing: `(f[nm0]/g[gm1]//h)`
+- ✓ Works with bars: `(f[nm0]:g[gm1];h[em2],)`
+- ✓ Works with custos: `(f[nm0]g+)`
+- ✓ Works with line breaks: `(f[nm0]) z+ (g[gm1])`
+- ✓ Works with attributes: `(f[nm0][cs:forte]g[alt:*][em2])`
+- ✓ Works with fusions: `(f@g[nm0]@h)`, `(@[fgh][em2])`
+- ✓ All 28 existing plugin tests passing
+
+**Backward Compatibility**:
+- No changes to existing patterns
+- No changes to existing highlight groups
+- Pure addition - zero breaking changes
+- Generic attributes still work for unrecognized `[attr:value]` forms
+
+**System State**:
+- Total syntax elements: 67 (+3 macros: Note, Glyph, Element)
+- Total highlight groups: 61 (+2: Identifier → Function, Number for macros)
+- Total test cases: 169+ (+13 macro tests)
+- Syntax file size: 577 lines (was 559, +18 lines)
+
+**Key Learnings**:
+
+1. **Component Pattern Strategy**: Use `contains=` for multi-color highlighting within single match
+2. **Lookbehind for Context**: Essential for isolating patterns in specific contexts
+3. **Function + Number Semantic**: Programming language conventions work well for macro notation
+4. **Character Class Efficiency**: `[nge]m` more efficient than alternation for similar patterns
+5. **Pattern Precedence Testing**: Automated tests prevent regression of critical ordering
+
+**Documentation**:
+- 30 predefined macro slots (10 per scope: note, glyph, element)
+- Macros highlighted as function calls (identifier + parameter)
+- Complete test coverage (85 examples, 8 automated validations)
+- Full integration with all existing GABC features
+
+**Completion Note**:
+This iteration completes the implementation of all gabcSnippet elements. The syntax highlighting system now supports the complete GABC notation specification with 67 distinct syntax elements across 21 iterations.
+
+---
+
 ## Syntax Highlighting Reference Table
 
 ### Complete Element-to-Highlight Mapping
@@ -3081,6 +3347,10 @@ Created comprehensive test file with 22 test cases:
 | Verbatim TeX (note) | `[nv:\it]` | `gabcAttrVerbatimNote` | `Special` | Special | LaTeX code (note level) |
 | Verbatim TeX (glyph) | `[gv:\color{red}]` | `gabcAttrVerbatimGlyph` | `Special` | Special | LaTeX code (glyph level) |
 | Verbatim TeX (element) | `[ev:\raise 1pt]` | `gabcAttrVerbatimElement` | `Special` | Special | LaTeX code (element level) |
+| **Macros (Notation Shortcuts)** |
+| Note-level macro | `[nm0]` - `[nm9]` | `gabcMacroNote` | `Function` + `Number` | Function, Number | Predefined note pattern (identifier: Function, digit: Number) |
+| Glyph-level macro | `[gm0]` - `[gm9]` | `gabcMacroGlyph` | `Function` + `Number` | Function, Number | Predefined glyph pattern (identifier: Function, digit: Number) |
+| Element-level macro | `[em0]` - `[em9]` | `gabcMacroElement` | `Function` + `Number` | Function, Number | Predefined element pattern (identifier: Function, digit: Number) |
 | **Generic Pitch Attributes** |
 | Divisio minor | `;` | `gabcBarMinor` | `Special` | Special | Half bar (minor division) |
 | Divisio minor suffix | `1-8` | `gabcBarMinorSuffix` | `Number` | Number | Minor bar variant (after ;) |
@@ -4007,6 +4277,16 @@ gabcNotes                               - Notes region: from %% to end of file
    │  ├─ gabcAttrVerbatimElement        - Specialized: [ev:tex] verbatim TeX (element level)
    │  │  (verbatim TeX regions contain @texSyntax for LaTeX highlighting)
    │  │
+   │  ├─ gabcMacroNote                  - Macro: [nm0-9] note-level shortcuts
+   │  │  ├─ gabcMacroIdentifier         - Identifier: nm (highlighted as Function)
+   │  │  └─ gabcMacroNumber             - Parameter: 0-9 (highlighted as Number)
+   │  ├─ gabcMacroGlyph                 - Macro: [gm0-9] glyph-level shortcuts
+   │  │  ├─ gabcMacroIdentifier         - Identifier: gm (highlighted as Function)
+   │  │  └─ gabcMacroNumber             - Parameter: 0-9 (highlighted as Number)
+   │  ├─ gabcMacroElement               - Macro: [em0-9] element-level shortcuts
+   │  │  ├─ gabcMacroIdentifier         - Identifier: em (highlighted as Function)
+   │  │  └─ gabcMacroNumber             - Parameter: 0-9 (highlighted as Number)
+   │  │
    │  ├─ gabcPitchAttrBracket           - Generic: [ ] attribute delimiters
    │  ├─ gabcPitchAttrName              - Generic: attribute name (fallback pattern)
    │  ├─ gabcPitchAttrColon             - Generic: : attribute separator
@@ -4102,17 +4382,28 @@ gabcNotes                               - Notes region: from %% to end of file
 - **Verbatim TeX**: `[nv/gv/ev:...]` note/glyph/element LaTeX code
 - Semantic-specific highlighting for 17 specialized `[attr:value]` types
 
-#### 11. **Text Formatting**
+#### 11. **Macros (Notation Shortcuts)**
+- **gabcMacroNote**: `[nm0]` through `[nm9]` - note-level shortcuts
+- **gabcMacroGlyph**: `[gm0]` through `[gm9]` - glyph-level shortcuts
+- **gabcMacroElement**: `[em0]` through `[em9]` - element-level shortcuts
+- **Components**:
+  - **gabcMacroIdentifier**: `nm`, `gm`, or `em` (highlighted as Function)
+  - **gabcMacroNumber**: `0` through `9` (highlighted as Number)
+- 30 total macro slots (3 scopes × 10 slots each)
+- User-definable patterns for repetitive notation sequences
+- Component-based highlighting for semantic clarity
+
+#### 12. **Text Formatting**
 - **Basic Formatting**: Bold, italic, underline, small caps, teletype, color
 - **Lyric Control**: Centering `{...}`, translation `[...]`, elision `<e>`
 - **Special Tags**: EUOUAE markers, line break control, protrusion adjustment
 - **LaTeX Integration**: Verbatim `<v>` tags with embedded TeX syntax
 
-#### 12. **Staff Elements**
+#### 13. **Staff Elements**
 - **gabcClef**: Clef indicators (c1-c4, cb1-cb4, f1-f4)
 - **gabcClefConnector**: `@` for mid-line clef changes
 
-#### 13. **Lyric Text**
+#### 14. **Lyric Text**
 - **gabcSyllable**: Sung text syllables between notations
 - Container for all text formatting tags and special markers
 
@@ -4185,6 +4476,8 @@ gabcNotes                               - Notes region: from %% to end of file
 | `gabcAttrAboveLinesText` | `String` | Above-lines text ([alt:...]) |
 | `gabcAttrVerbatimDelim` | `Special` | Verbatim TeX delimiters (nv/gv/ev) |
 | `gabcAttrVerbatim*` | `@texSyntax` | Embedded LaTeX in verbatim attrs |
+| `gabcMacroIdentifier` | `Function` | Macro identifier (nm/gm/em) |
+| `gabcMacroNumber` | `Number` | Macro parameter digit (0-9) |
 
 ### Notes on Syntax Organization
 
