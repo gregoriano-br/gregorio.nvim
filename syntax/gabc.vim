@@ -85,7 +85,7 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " Note: The /\@ construct is a negative zero-width assertion in Vim regex
 " Matches content inside parentheses (entire musical snippet), excluding the parentheses themselves
 " This allows for highlighting of its contained elements (pitches, modifiers, etc.)
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue transparent
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcModifierEpisema,gabcModifierEpisemaNumber,gabcModifierIctus,gabcModifierIctusNumber,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -146,12 +146,32 @@ syntax match gabcOriscusSuffix /\([oO]\)\@<=[01]/ contained containedin=gabcSnip
 " s: stropha, ~: liquescent deminutus
 " <: augmented liquescent, >: diminished liquescent
 " =: linea, r: punctum cavum, R: punctum quadratum surrounded by lines
+" .: punctum mora vocis (rhythmic dot)
 " NOTE: These are defined BEFORE compound modifiers so compounds take precedence
-syntax match gabcModifierSimple /[qwWvVs~<>=rR]/ contained containedin=gabcSnippet
+syntax match gabcModifierSimple /[qwWvVs~<>=rR.]/ contained containedin=gabcSnippet
 
-" Punctum cavum surrounded by lines: r0
-" Must be defined after simple 'r' so it takes precedence
-syntax match gabcModifierSpecial /r0/ contained containedin=gabcSnippet
+" Special modifiers with numbers (r followed by digit)
+" r0: punctum cavum surrounded by lines
+" r1-r8: various signs above staff (musica ficta, accents, etc.)
+" MUST be defined AFTER simple 'r' to take precedence
+" Pattern captures 'r' followed by single digit 0-8
+syntax match gabcModifierSpecial /r[0-8]/ contained containedin=gabcSnippet
+
+" Horizontal episema: _ optionally followed by suffix 0-5
+" The underscore is the main modifier, suffix indicates episema length/position
+syntax match gabcModifierEpisema /_/ contained containedin=gabcSnippet
+
+" Episema suffix number: digit 0-5 immediately after _
+" Uses positive lookbehind to match digit only after _
+syntax match gabcModifierEpisemaNumber /\(_\)\@<=[0-5]/ contained containedin=gabcSnippet
+
+" Ictus: ' optionally followed by suffix 0 or 1
+" The apostrophe is the main modifier, suffix indicates ictus type
+syntax match gabcModifierIctus /'/ contained containedin=gabcSnippet
+
+" Ictus suffix number: digit 0 or 1 immediately after '
+" Uses positive lookbehind to match digit only after '
+syntax match gabcModifierIctusNumber /\('\)\@<=[01]/ contained containedin=gabcSnippet
 
 " Compound modifiers: multi-character sequences
 " MUST be defined AFTER simple modifiers to take precedence in Vim syntax matching
@@ -342,6 +362,12 @@ highlight link gabcOriscusSuffix Number
 highlight link gabcModifierSimple Identifier
 highlight link gabcModifierCompound Identifier
 highlight link gabcModifierSpecial Identifier
+
+" GABC rhythmic and articulation modifiers
+highlight link gabcModifierEpisema Identifier
+highlight link gabcModifierEpisemaNumber Number
+highlight link gabcModifierIctus Identifier
+highlight link gabcModifierIctusNumber Number
 
 " GABC accidentals: symbols indicating pitch alteration (includes pitch letter for position)
 highlight link gabcAccidental Function
