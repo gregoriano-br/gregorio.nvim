@@ -52,15 +52,15 @@ fi
 echo "✓ Test 2 PASSED: Highlight link configured"
 echo ""
 
-# Test 3: Verify pattern matches pitch+
+# Test 3: Verify pattern matches pitch+ (lowercase only)
 echo "Test 3: Checking pattern definition..."
-if grep -q 'gabcCustos.*\[a-npA-NP\]+' "$SYNTAX_FILE"; then
-    echo "  ✓ Custos pattern matches pitch+ (e.g., f+, g+)"
+if grep -q 'gabcCustos.*\[a-np\]+' "$SYNTAX_FILE"; then
+    echo "  ✓ Custos pattern matches lowercase pitch+ (e.g., f+, g+)"
 else
     echo "  ❌ Custos pattern incorrect or missing"
     exit 1
 fi
-echo "✓ Test 3 PASSED: Pattern matches pitch+ correctly"
+echo "✓ Test 3 PASSED: Pattern matches lowercase pitch+ correctly"
 echo ""
 
 # Test 4: Verify containment
@@ -84,11 +84,11 @@ else
 fi
 echo ""
 
-# Test 6: Verify custos examples in test file
+# Test 6: Verify custos examples in test file (lowercase only)
 echo "Test 6: Checking test file content..."
-CUSTOS_COUNT=$(grep -o '[a-npA-NP]+' "$TEST_FILE" | wc -l)
-if [ "$CUSTOS_COUNT" -gt 30 ]; then
-    echo "  ✓ Test file contains $CUSTOS_COUNT custos examples"
+CUSTOS_COUNT=$(grep -o '[a-np]+' "$TEST_FILE" | wc -l)
+if [ "$CUSTOS_COUNT" -gt 15 ]; then
+    echo "  ✓ Test file contains $CUSTOS_COUNT custos examples (lowercase)"
 else
     echo "  ❌ Test file has insufficient custos examples: $CUSTOS_COUNT"
     exit 1
@@ -101,9 +101,9 @@ echo "✓ ALL TESTS PASSED"
 echo "========================================="
 echo ""
 echo "Summary:"
-echo "  - Custos syntax element defined"
+echo "  - Custos syntax element defined (lowercase pitches only)"
 echo "  - Highlight linked to Operator"
-echo "  - Pattern matches pitch+ correctly"
+echo "  - Pattern matches pitch+ correctly ([a-np]+)"
 echo "  - Proper containment in gabcSnippet"
 echo "  - No Vim syntax errors"
 echo "  - $CUSTOS_COUNT test examples"

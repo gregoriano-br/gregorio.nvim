@@ -113,19 +113,20 @@ syntax match gabcPitchSuffix /\([A-NP]\)\@<=[012]/ contained containedin=gabcSni
 " GABC ACCIDENTALS: alter the pitch (includes pitch letter for position on staff)
 " The pitch letter comes BEFORE the accidental symbol
 " Example: (ixiv) = i + x (flat on i) + i + v (virga)
+" NOTE: Accidentals use lowercase pitch letters ONLY to indicate staff position
 
 " Accidentals with parentheses: pitch followed by x?, #?, y?
 " Parentheses indicate cautionary/editorial accidentals
-syntax match gabcAccidental /[a-npA-NP][x#y]?/ contained containedin=gabcSnippet
+syntax match gabcAccidental /[a-np][x#y]?/ contained containedin=gabcSnippet
 
 " Double sharp: pitch followed by ## (soft sharp)
-syntax match gabcAccidental /[a-npA-NP]##/ contained containedin=gabcSnippet
+syntax match gabcAccidental /[a-np]##/ contained containedin=gabcSnippet
 
 " Soft natural: pitch followed by Y
-syntax match gabcAccidental /[a-npA-NP]Y/ contained containedin=gabcSnippet
+syntax match gabcAccidental /[a-np]Y/ contained containedin=gabcSnippet
 
 " Basic accidentals: pitch followed by x (flat), # (sharp), y (natural)
-syntax match gabcAccidental /[a-npA-NP][x#y]/ contained containedin=gabcSnippet
+syntax match gabcAccidental /[a-np][x#y]/ contained containedin=gabcSnippet
 
 " GABC PITCH MODIFIERS: symbols that modify note appearance/meaning
 
@@ -212,7 +213,8 @@ syntax match gabcBarZeroSuffix /\([,\^`]\)\@<=0/ contained containedin=gabcSnipp
 " Syntax: pitch+ (e.g., f+, g+, a+)
 " The custos shows which pitch begins the next line
 " Both pitch and + are highlighted as operators for visual consistency
-syntax match gabcCustos /[a-npA-NP]+/ contained containedin=gabcSnippet
+" NOTE: Custos uses lowercase pitch letters ONLY to indicate staff position
+syntax match gabcCustos /[a-np]+/ contained containedin=gabcSnippet
 
 " GABC NEUME FUSIONS: @ connector for fusing notes into single neume
 " Two forms:

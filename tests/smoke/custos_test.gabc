@@ -32,44 +32,27 @@ name: Custos (End-of-Line Guide) Test;
 (n) test n+
 (p) test p+
 
-% Test 6: Custos with all uppercase pitches (less common)
-(A) Test A+
-(B) Test B+
-(C) Test C+
-(D) Test D+
-(E) Test E+
-(F) Test F+
-(G) Test G+
-(H) Test H+
-(I) Test I+
-(J) Test J+
-(K) Test K+
-(L) Test L+
-(M) Test M+
-(N) Test N+
-(P) Test P+
-
-% Test 7: Custos after spacing operators
+% Test 6: Custos after spacing operators
 (f) spa(g)cing// h+
 
-% Test 8: Custos after divisio marks
+% Test 7: Custos after divisio marks
 (f) di(g)vi(h)sio: i+
 (f) mi(g)nor; j+
 (f) mi(g)ni(h)ma, k+
 
-% Test 9: Custos in complex context
+% Test 8: Custos in complex context
 (f) glo(g)ri(h[shape:virga])a:(i) Pa(j)tri;(k) et(l) Fi(m)li:: m+
 
-% Test 10: Multiple custos on different lines
+% Test 9: Multiple custos on different lines
 (f) first(g) line f+
 (g) second(h) line h+
 (h) third(i) line i+
 
-% Test 11: Custos should NOT match + alone (not a custos)
+% Test 10: Custos should NOT match + alone (not a custos)
 (f) plus + sign
 
-% Test 12: Custos should NOT match without pitch
+% Test 11: Custos should NOT match without pitch
 (f) no(g) pitch +
 
-% Test 13: Edge case - custos at very end
+% Test 12: Edge case - custos at very end
 (f) fi(g)nal(h) word h+
