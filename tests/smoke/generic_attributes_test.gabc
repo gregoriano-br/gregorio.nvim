@@ -33,3 +33,65 @@
 
 % Test 10: Long attribute name
 (h[verylongattributename:verylongvalue])
+
+% === Edge Cases ===
+
+% Test 11: Attribute with uppercase pitch (inclinatum)
+(G[shape:virga]H[color:red])
+
+% Test 12: Attribute with pitch suffix
+(G0[shape:stroke]F1[note:test])
+
+% Test 13: Attribute after accidental
+(gx[shape:flat]h#[color:sharp])
+
+% Test 14: Attribute after oriscus
+(go[shape:oriscus]O[note:scapus])
+
+% Test 15: Attribute with compound modifiers
+(gvv[shape:bivirga]hsss[note:tristropha])
+
+% Test 16: Multiple attributes on same pitch
+(g[shape:virga][color:red][note:important])
+
+% Test 17: Attribute in fusion
+(f@g[shape:virga]@h)
+
+% Test 18: Attribute after fusion
+(@[fgh][shape:torculus])
+
+% Test 19: Attribute with spacing operators
+(f/g[shape:virga]//h[color:blue])
+
+% Test 20: Value with underscores
+(g[class:note_head]f[id:pitch_1])
+
+% Test 21: Value with dashes/hyphens
+(h[type:semi-breve]g[class:note-stem])
+
+% Test 22: Value with mixed case
+(g[Shape:Virga]f[COLOR:Red])
+
+% Test 23: Numeric attribute names
+(g[level1:value]f[step2:data])
+
+% Test 24: Empty-like values (single char)
+(g[x:a]f[y:1])
+
+% Test 25: Attributes with initio debilis
+(-g[shape:debilis]f[note:weak])
+
+% Test 26: Multiple brackets mixed (spacing + attribute)
+(f/[2]g[shape:virga]/[1.5]h[color:blue])
+
+% Test 27: Value with punctuation
+(g[note:test!]f[data:value?])
+
+% Test 28: Value with parentheses (paren matching test)
+(g[test:(value)]f[data:[array]])
+
+% Test 29: Value with all bracket types
+(g[test:{curly}]f[data:(round)]h[x:[square]])
+
+% Test 30: Consecutive attributes without pitches between
+(gf[shape:podatus][color:red][style:bold])

@@ -26,6 +26,8 @@
    - [Iteration 11: Accidentals (Corrected)](#iteration-11-accidentals-corrected)
    - [Iteration 12: Highlight Group Refinement](#iteration-12-highlight-group-refinement)
    - [Iteration 13: Neume Fusions](#iteration-13-neume-fusions)
+   - [Iteration 14: Neume Spacing Operators](#iteration-14-neume-spacing-operators)
+   - [Iteration 15: Generic Pitch Attributes](#iteration-15-generic-pitch-attributes)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -46,7 +48,7 @@ The goal is to provide a reference for developers (human or AI) building similar
 
 ### Development Journey
 
-The syntax highlighting system was built through **14 iterations** starting from the absolute basics:
+The syntax highlighting system was built through **15 iterations** starting from the absolute basics:
 
 **Foundation** (Iterations 0-2):
 - File structure and comments
@@ -1325,6 +1327,379 @@ e(f)le(@[fgh]gf)i(h)son()
 
 ---
 
+### Iteration 14: Neume Spacing Operators
+
+**Goal**: Implement syntax highlighting for neume spacing operators
+
+**Commit**: `9e56cab` - feat: implement neume spacing operators
+
+#### Problem Analysis
+
+GABC provides fine-grained control over spacing between neumes:
+
+1. **Fixed spacing operators**:
+   - `/` - small space (default neumatic separation)
+   - `//` - medium space (larger than default)
+   - `/0` - half space (within same neume)
+   - `/!` - small space within same neume
+   - `!` - zero-width space (no visual separation)
+
+2. **Scaled spacing**: `/[factor]` - custom space with numeric factor
+
+#### Implementation
+
+**Fixed Spacing Operators**:
+```vim
+" Define simple / FIRST, then override with more specific patterns
+syntax match gabcSpacingSmall /\// contained containedin=gabcSnippet
+syntax match gabcSpacingHalf /\/0/ contained containedin=gabcSnippet
+syntax match gabcSpacingSingle /\/!/ contained containedin=gabcSnippet
+syntax match gabcSpacingDouble /\/\// contained containedin=gabcSnippet
+syntax match gabcSpacingZero /!/ contained containedin=gabcSnippet
+```
+
+**Pattern Precedence**: In Vim syntax, "last defined wins" for overlapping patterns:
+- `/` defined first (matches all single slashes)
+- `/0`, `/!`, `//` defined after (override specific patterns)
+- This ensures `//` is one operator, not two `/` operators
+
+**Scaled Spacing Components** (Simplified Approach):
+```vim
+" Opening bracket after / (lookbehind prevents conflict with pitch attributes)
+syntax match gabcSpacingBracket /\(\/\)\@<=\[/ contained containedin=gabcSnippet
+
+" Closing bracket
+syntax match gabcSpacingBracket /\]/ contained containedin=gabcSnippet
+
+" Numeric factor after [ (positive lookbehind prevents capturing pitch suffixes)
+syntax match gabcSpacingFactor /\(\[\)\@<=-\?\d\+\(\.\d\+\)\?/ contained containedin=gabcSnippet
+```
+
+**Key Insight**: Lookbehind `\(\/\)\@<=` ensures `[` only matches after `/`, avoiding conflict with pitch attributes `[attr:val]`
+
+**Highlight Links**:
+```vim
+highlight link gabcSpacingDouble Operator
+highlight link gabcSpacingSingle Operator
+highlight link gabcSpacingHalf Operator
+highlight link gabcSpacingSmall Operator
+highlight link gabcSpacingZero Operator
+highlight link gabcSpacingBracket Delimiter
+highlight link gabcSpacingFactor Number
+```
+
+#### Testing
+
+**Created**: `tests/smoke/spacing_smoke_test.gabc`
+
+**Test Cases**:
+1. Small space: `(f/g)`
+2. Medium space: `(f//g)`
+3. Half space: `(f/0g)`
+4. Single space: `(f/!g)`
+5. Zero space: `(f!g)`
+6. Scaled positive: `(f/[2]g)`
+7. Scaled negative: `(f/[-1]g)`
+8. Scaled decimal: `(f/[0.5]g)`
+9. Multiple operators: `(f/g//h/!i)`
+10. Combined with modifiers: `(fv/gw//h~)`
+11. Combined with accidentals: `(fx/g#//h)`
+12. With pitch suffixes: `(F0/G1//H2)`
+13. Edge case - consecutive: `(f//!g)`
+14. Complex combination: `(f/[1.5]g/0h//i!j)`
+
+**Validation Script**: `tests/smoke/test_spacing_highlight.sh`
+- 6 test categories covering all operator types
+- ✓ All tests passed
+
+#### Challenges
+
+**Challenge 1**: Pattern Precedence
+- **Problem**: `//` being matched as two `/` characters
+- **Solution**: Define `/` first, then override with `//` (last defined wins)
+
+**Challenge 2**: Bracket Disambiguation
+- **Problem**: `/[...]` vs `[attr:...]` both use brackets
+- **Solution**: Lookbehind `/\(\/\)\@<=\[/` ensures spacing brackets only after `/`
+
+**Challenge 3**: Number Capture Scope
+- **Problem**: Initial pattern captured ALL numbers, breaking pitch suffixes (G0, F1)
+- **Solution**: Positive lookbehind `\(\[\)\@<=` only captures numbers after `[`
+
+#### Semantic Rationale
+
+**Why all spacing operators → `Operator`?**
+- Control program flow (spacing between musical elements)
+- Modify default behavior (override automatic spacing)
+- Operator-like semantics (apply to adjacent elements)
+
+**Why brackets → `Delimiter`?**
+- Enclose argument (numeric factor)
+- Similar to function parameter delimiters
+- Distinct from spacing operator itself
+
+**Why factor → `Number`?**
+- Literal numeric value
+- Scalar multiplier semantics
+- Standard highlight for numeric literals
+
+#### Example Visual Output
+
+```gabc
+% Fixed spacing operators (all Operator)
+Ky(f/g//h/!i!j)ri(e)
+     ^ ^^  ^^ ^  spacing operators: Operator
+
+% Scaled spacing (/ as Operator, [] as Delimiter, number as Number)
+e(f/[1.5]g)le(h)
+   ^      ^  slash: Operator
+    ^    ^   brackets: Delimiter
+     ^^^     factor: Number
+```
+
+#### Impact on System
+
+**Files Modified**:
+- `syntax/gabc.vim`: +18 lines (spacing patterns + highlights)
+- `tests/smoke/spacing_smoke_test.gabc`: +42 lines (new test file)
+- `tests/smoke/test_spacing_highlight.sh`: +153 lines (new validation script)
+
+**Backward Compatibility**: ✓ No breaking changes
+- Lookbehind patterns prevent conflicts
+- All previous tests still pass (76+ tests)
+
+**Test Results**: ✓ All 14 test cases pass, 6 validation categories pass
+
+---
+
+### Iteration 15: Generic Pitch Attributes
+
+**Goal**: Implement a generic `[attribute:value]` syntax for pitch-level metadata annotations
+
+**Commit**: `d15d5bc` - feat: implement generic pitch attributes syntax [attribute:value]
+
+#### Problem Analysis
+
+Originally implemented `[shape:...]` for shape hints, but recognized the need for a **generic extensible system**:
+
+**Requirements**:
+1. Support ANY attribute name (not just "shape")
+2. Disable Vim's parenthesis matching in values (e.g., `[test:1{]` shouldn't trigger missing `}` warning)
+3. Avoid conflicts with spacing brackets `/[...]`
+4. Maintain backward compatibility with `[shape:...]` as a special case
+
+**Design Decision**: Evolve from specific `[shape:value]` to generic `[attribute:value]` pattern
+
+#### Implementation
+
+**Opening Bracket with Lookahead**:
+```vim
+" Match [ only when followed by word characters + colon (attribute pattern)
+syntax match gabcPitchAttrBracket /\[\(\w\+:\)\@=/ contained containedin=gabcSnippet
+```
+
+**Pattern Analysis**:
+- `\[` - literal opening bracket
+- `\(\w\+:\)\@=` - positive lookahead: followed by "words + colon"
+- This prevents matching `/[` (spacing) since `/[` is followed by digits, not `word:`
+
+**Closing Bracket with Lookbehind**:
+```vim
+" Match ] when preceded by non-whitespace (end of value)
+syntax match gabcPitchAttrBracket /\(\S\)\@<=\]/ contained containedin=gabcSnippet
+```
+
+**Attribute Name**:
+```vim
+" Match any word characters between [ and :
+syntax match gabcPitchAttrName /\(\[\)\@<=\w\+\(:\)\@=/ contained containedin=gabcSnippet
+```
+
+**Pattern Analysis**:
+- `\(\[\)\@<=` - positive lookbehind: preceded by `[`
+- `\w\+` - one or more word characters (the attribute name)
+- `\(:\)\@=` - positive lookahead: followed by `:`
+- Captures: `shape`, `color`, `custom`, any word-based attribute
+
+**Colon Separator**:
+```vim
+" Match : when preceded by [attribute_name
+syntax match gabcPitchAttrColon /\(\[\w\+\)\@<=:/ contained containedin=gabcSnippet
+```
+
+**Attribute Value (with Paren Matching Disabled)**:
+```vim
+" Region from after [attr: to before ]
+syntax region gabcPitchAttrValue start=/\(\[\w\+:\)\@<=/ end=/\(\]\)\@=/ contained containedin=gabcSnippet oneline
+```
+
+**Key Features**:
+- `syntax region` (not `match`) - allows disabling built-in Vim features
+- `oneline` - region cannot span multiple lines
+- `start=/\(\[\w\+:\)\@<=/` - begins after `[attr:`
+- `end=/\(\]\)\@=/` - ends before `]` (lookahead)
+- **Automatic paren matching disable**: Regions implicitly ignore Vim's built-in parenthesis/bracket matching
+
+**Highlight Links**:
+```vim
+highlight link gabcPitchAttrBracket Delimiter
+highlight link gabcPitchAttrName PreProc      " Attribute name (like preprocessor directives)
+highlight link gabcPitchAttrColon Special     " Separator
+highlight link gabcPitchAttrValue String      " Value (like string literals)
+```
+
+#### Testing
+
+**Test Files Created**:
+1. `tests/smoke/shape_hints_smoke_test.gabc` - 12 tests with `[shape:...]` (backward compatibility)
+2. `tests/smoke/generic_attributes_test.gabc` - 10 tests with various attributes
+3. `tests/smoke/test_pitch_attributes_highlight.sh` - Automated validation script
+
+**Generic Attributes Test Cases**:
+1. Original shape: `[shape:stroke]`
+2. Color attribute: `[color:red]`
+3. Custom attribute: `[custom:data123]`
+4. Note attribute: `[note:important]`
+5. Multiple attributes: `[shape:virga][color:blue][custom:test]`
+6. With modifiers: `gv[shape:punctum]`, `h~[color:green]`
+7. Numeric values: `[size:12]`, `[weight:500]`
+8. **Paren matching test**: `[test:1{]`, `[data:x}]` - NO warnings! ✓
+9. Single letter name: `[x:y]`
+10. Long names: `[verylongattributename:verylongvalue]`
+
+**Validation Tests**:
+```vim
+" Opening bracket
+call cursor(8, 4)  " Position of [ in (gf[shape:stroke])
+let syntax = synIDattr(synID(line("."), col("."), 1), "name")
+" Expected: gabcPitchAttrBracket
+
+" Attribute name
+call cursor(8, 5)  " Position of 's' in [shape:stroke]
+let syntax = synIDattr(synID(line("."), col("."), 1), "name")
+" Expected: gabcPitchAttrName
+
+" Colon separator
+call cursor(8, 10)  " Position of : in [shape:stroke]
+let syntax = synIDattr(synID(line("."), col("."), 1), "name")
+" Expected: gabcPitchAttrColon
+
+" Value
+call cursor(8, 11)  " Position of 's' in stroke
+let syntax = synIDattr(synID(line("."), col("."), 1), "name")
+" Expected: gabcPitchAttrValue
+
+" Closing bracket
+call cursor(8, 17)  " Position of ] in [shape:stroke]
+let syntax = synIDattr(synID(line("."), col("."), 1), "name")
+" Expected: gabcPitchAttrBracket
+```
+
+**Results**:
+- ✓ All 30+ test cases pass
+- ✓ 76+ total plugin tests pass
+- ✓ Paren matching successfully disabled (no warnings for `{` or `}` in values)
+- ✓ No conflicts with spacing brackets `/[...]`
+
+#### Challenges
+
+**Challenge 1**: Bracket Disambiguation
+- **Problem**: Three different uses of `[` in GABC:
+  1. Spacing: `/[factor]`
+  2. Fusion: `@[pitches]`
+  3. Attributes: `[attr:value]`
+- **Solution**: Use distinct lookahead patterns:
+  - Spacing: `\(\/\)\@<=\[` (after `/`)
+  - Fusion: `@\[` (literal `@[`)
+  - Attributes: `\[\(\w\+:\)\@=` (before `word:`)
+
+**Challenge 2**: Closing Bracket Overlap
+- **Problem**: `]` ends both spacing and attributes
+- **Initial approach**: `\(\w\)\@<=\]` (after word char)
+- **Issue**: Too restrictive for complex values
+- **Solution**: `\(\S\)\@<=\]` (after any non-whitespace)
+
+**Challenge 3**: Disabling Paren Matching
+- **Problem**: Values like `1{` trigger Vim's built-in `}` matching warning
+- **Solution**: Use `syntax region` instead of `syntax match`
+  - Regions have special handling in Vim
+  - Automatically disable built-in character matching within region
+  - `oneline` prevents multi-line spans
+
+**Challenge 4**: Precedence with Other Patterns
+- **Problem**: Value pattern initially too greedy
+- **Solution**: Careful use of lookahead `\(\]\)\@=` to stop before `]`
+
+#### Semantic Rationale
+
+**Why generic `[attribute:value]` instead of specific `[shape:...]`?**
+- **Extensibility**: GABC may add more metadata types in future
+- **User customization**: Allow arbitrary user-defined attributes
+- **Consistency**: Single pattern handles all attribute-value pairs
+- **Maintainability**: One implementation instead of many specific ones
+
+**Why `PreProc` for attribute names?**
+- Preprocessor directives have similar semantics (metadata annotations)
+- Stands out from regular text (important structural element)
+- Conventionally used for annotations and meta-information
+
+**Why `String` for values?**
+- Values are literal data (like string literals in programming)
+- Distinct from attribute names and operators
+- Standard highlight group for literal values
+
+**Why `region` instead of `match` for values?**
+- Need to disable Vim's built-in matching
+- Regions provide this capability automatically
+- More semantically correct (value is a bounded region, not a simple match)
+
+#### Example Visual Output
+
+```gabc
+% Shape attribute (backward compatible)
+Ky(f[shape:stroke]g)ri(e)
+   ^ bracket: Delimiter
+    ^^^^^ name: PreProc (attribute name highlighting)
+         ^ colon: Special
+          ^^^^^^ value: String
+                ^ bracket: Delimiter
+
+% Generic attributes (same highlighting)
+e(f[color:red]g[custom:data]h)
+   ^^^^^^ ^^^^  ^^^^^^^ ^^^^  all follow same pattern
+
+% Paren matching disabled (no warnings!)
+son(g[test:1{]h[data:x}]i)
+           ^^        ^^  these don't trigger missing brace warnings
+```
+
+#### Impact on System
+
+**Files Modified**:
+- `syntax/gabc.vim`: +31 lines (generic attribute patterns + highlights)
+- `tests/smoke/shape_hints_smoke_test.gabc`: +43 lines (backward compat tests)
+- `tests/smoke/generic_attributes_test.gabc`: +32 lines (new generic tests)
+- `tests/smoke/test_pitch_attributes_highlight.sh`: +119 lines (validation script)
+
+**Backward Compatibility**: ✓ Perfect backward compatibility
+- `[shape:...]` works exactly as before
+- All previous shape hint tests pass unchanged
+- Generic pattern subsumes specific shape pattern
+
+**Extensibility**: ✓ Ready for future expansion
+- Any `[word:value]` pattern automatically supported
+- No code changes needed for new attribute types
+- User-defined attributes work immediately
+
+**Test Results**: ✓ All 30+ attribute tests pass, 76+ total tests pass
+
+**Semantic Evolution**:
+- **Before**: Specific `[shape:STRING]` implementation
+- **After**: Generic `[ATTRIBUTE:VALUE]` with `shape` as special case
+- **Benefit**: Future-proof architecture for metadata annotations
+
+---
+
 ## Syntax Highlighting Reference Table
 
 ### Complete Element-to-Highlight Mapping
@@ -1401,6 +1776,19 @@ e(f)le(@[fgh]gf)i(h)son()
 | **Neume Fusions** |
 | Individual fusion connector | `f@g@h` | `gabcFusionConnector` | `Operator` | Operator | Connects pitches sequentially into neume |
 | Collective fusion function | `@[fgh]` | `gabcFusionFunction` | `Function` | Function | Function-style fusion delimiters (@[ and ]) |
+| **Neume Spacing** |
+| Small space | `/` | `gabcSpacingSmall` | `Operator` | Operator | Default neumatic separation |
+| Medium space | `//` | `gabcSpacingDouble` | `Operator` | Operator | Larger separation |
+| Half space | `/0` | `gabcSpacingHalf` | `Operator` | Operator | Half space within neume |
+| Single space | `/!` | `gabcSpacingSingle` | `Operator` | Operator | Small space within neume |
+| Zero space | `!` | `gabcSpacingZero` | `Operator` | Operator | No visual separation |
+| Spacing bracket | `[` `]` | `gabcSpacingBracket` | `Delimiter` | Delimiter | Scaled spacing delimiters (in /[...]) |
+| Spacing factor | `2` `0.5` | `gabcSpacingFactor` | `Number` | Number | Numeric scaling factor |
+| **Pitch Attributes** |
+| Attribute bracket | `[` `]` | `gabcPitchAttrBracket` | `Delimiter` | Delimiter | Generic attribute delimiters |
+| Attribute name | `shape` `color` | `gabcPitchAttrName` | `PreProc` | PreProc | Attribute identifier |
+| Attribute colon | `:` | `gabcPitchAttrColon` | `Special` | Special | Name-value separator |
+| Attribute value | `stroke` `red` | `gabcPitchAttrValue` | `String` | String | Attribute value (paren matching disabled) |
 
 ### Highlight Group Rationale
 
@@ -2185,8 +2573,22 @@ gabcNotes                               - Notes region: from %% to end of file
    │  │
    │  ├─ gabcFusionConnector            - Individual fusion: @ between pitches (f@g@h)
    │  │
-   │  └─ gabcFusionCollective           - Collective fusion: @[...] function-style
-   │     └─ gabcFusionFunction          - Delimiters: @[ and ] (matchgroup)
+   │  ├─ gabcFusionCollective           - Collective fusion: @[...] function-style
+   │  │  └─ gabcFusionFunction          - Delimiters: @[ and ] (matchgroup)
+   │  │
+   │  ├─ gabcSpacingSmall               - Small space: /
+   │  ├─ gabcSpacingDouble              - Medium space: //
+   │  ├─ gabcSpacingHalf                - Half space: /0
+   │  ├─ gabcSpacingSingle              - Single space: /!
+   │  ├─ gabcSpacingZero                - Zero space: !
+   │  ├─ gabcSpacingBracket             - Spacing delimiters: [ ] (in /[factor])
+   │  ├─ gabcSpacingFactor              - Numeric factor: 2, 0.5, -1 (in /[...])
+   │  │
+   │  ├─ gabcPitchAttrBracket           - Attribute delimiters: [ ] (in [attr:val])
+   │  ├─ gabcPitchAttrName              - Attribute name: shape, color, custom
+   │  ├─ gabcPitchAttrColon             - Attribute separator: :
+   │  └─ gabcPitchAttrValue             - Attribute value: stroke, red, data
+   │     (region with paren matching disabled)
    │
    └─ nabcSnippet                       - NABC notation snippet: St. Gall adiastematic neumes
                                          (Container for future NABC-specific elements)
@@ -2280,6 +2682,17 @@ gabcNotes                               - Notes region: from %% to end of file
 | `@texSyntax` | *(TeX highlighting)* | Embedded LaTeX code |
 | `gabcFusionConnector` | `Operator` | Individual pitch fusion connector |
 | `gabcFusionFunction` | `Function` | Collective fusion delimiters |
+| `gabcSpacingSmall` | `Operator` | Small neume spacing |
+| `gabcSpacingDouble` | `Operator` | Medium neume spacing |
+| `gabcSpacingHalf` | `Operator` | Half space spacing |
+| `gabcSpacingSingle` | `Operator` | Single space spacing |
+| `gabcSpacingZero` | `Operator` | Zero-width spacing |
+| `gabcSpacingBracket` | `Delimiter` | Spacing factor brackets |
+| `gabcSpacingFactor` | `Number` | Numeric scaling factor |
+| `gabcPitchAttrBracket` | `Delimiter` | Attribute brackets |
+| `gabcPitchAttrName` | `PreProc` | Attribute name |
+| `gabcPitchAttrColon` | `Special` | Name-value separator |
+| `gabcPitchAttrValue` | `String` | Attribute value |
 
 ### Notes on Syntax Organization
 
@@ -2321,6 +2734,6 @@ This hierarchical structure ensures accurate, context-aware highlighting through
 
 ---
 
-**Document Version**: 1.2  
+**Document Version**: 1.3  
 **Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim
