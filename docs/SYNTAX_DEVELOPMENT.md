@@ -38,6 +38,7 @@
    - [Appendix to Iteration 21: No-Custos Attribute](#appendix-to-iteration-21-no-custos-attribute)
    - [Critical Bug Fix: gabcSyllable Region Containment](#critical-bug-fix-gabcsyllable-region-containment)
    - [Iteration 22: NABC Neume Codes](#iteration-22-nabc-neume-codes)
+   - [Iteration 23: NABC Glyph Modifiers](#iteration-23-nabc-glyph-modifiers)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -58,7 +59,7 @@ The goal is to provide a reference for developers (human or AI) building similar
 
 ### Development Journey
 
-The syntax highlighting system was built through **22 iterations** starting from the absolute basics:
+The syntax highlighting system was built through **23 iterations** starting from the absolute basics:
 
 **Foundation** (Iterations 0-2):
 - File structure and comments
@@ -91,13 +92,15 @@ The syntax highlighting system was built through **22 iterations** starting from
 - Line breaks (layout control: z, Z with suffixes)
 - Critical containment fix for gabcSnippet
 
-**Semantic Specialization** (Iterations 20-22):
+**Semantic Specialization** (Iterations 20-23):
 - Specialized pitch attributes (18 types across 8 categories)
 - Choral signs, braces, stem length, ledger lines, slurs
 - Episema tuning, above-lines text, verbatim TeX (3 scopes)
 - No-custos boolean flag attribute (appendix to Iteration 21)
 - Pattern precedence over generic fallback
 - Macros (3 scopes: note, glyph, element with 0-9 parameters)
+- NABC neume codes (31 codes: St. Gall and Laon traditions)
+- NABC glyph modifiers (6 types: S, G, M, -, >, ~, with numeric suffixes)
 - NABC neume codes (31 codes from St. Gall and Laon traditions)
 
 **Current Status**: 68 syntax elements, 64 highlight groups, 582 lines of VimScript
@@ -3610,6 +3613,205 @@ Users can now visually distinguish NABC neume codes from arbitrary text, improvi
 
 ---
 
+### Iteration 23: NABC Glyph Modifiers
+
+**Date**: October 16, 2025  
+**Commit**: `0bda206`
+
+**Background**:
+
+NABC neume codes (implemented in Iteration 22) can be followed by **glyph modifiers** that alter the appearance or meaning of the neume. These modifiers are documented in the Gregorio specification and apply equally to St. Gall and Laon neumes.
+
+**Problem**:
+
+NABC snippets correctly highlighted neume codes (`vi`, `pu`, etc.) but treated subsequent modifiers as plain text:
+
+```gabc
+(e|viS1|f|puG2|g|ta~3)
+   ^^^^^  ^^^^^  ^^^^^
+   Only 'vi', 'pu', 'ta' highlighted, modifiers ignored
+```
+
+Users had no visual distinction between neume codes and their modifiers, reducing readability of complex NABC notation.
+
+**Requirements**:
+
+1. Highlight 6 glyph modifier types: `S`, `G`, `M`, `-`, `>`, `~`
+2. Support optional numeric suffix 1-9 for each modifier
+3. Apply to both St. Gall and Laon neumes
+4. Use same highlight groups as GABC modifiers for consistency
+
+**Modifier Semantics** (from Gregorio documentation):
+
+| Modifier | Meaning | Example |
+|----------|---------|---------|
+| `S` | Modification of the mark | `viS`, `viS1` |
+| `G` | Modification of the grouping (neumatic break) | `puG`, `puG2` |
+| `M` | Melodic modification | `taM`, `taM3` |
+| `-` | Addition of episema | `vi-`, `vi-4` |
+| `>` | Augmentive liquescence | `pu>`, `pu>5` |
+| `~` | Diminutive liquescence | `ta~`, `ta~6` |
+
+**Implementation**:
+
+```vim
+" NABC snippet: All subsequent positions (after pipe delimiter)
+" Contains St. Gall and Laon neume codes
+" Note: NOT transparent - contains specific NABC syntax elements
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcNeume,nabcGlyphModifier,nabcGlyphModifierNumber
+
+" NABC GLYPH MODIFIERS: Apply to St. Gall and Laon neumes
+" These modifiers follow immediately after the neume code
+" All can optionally take a numeric suffix 1-9
+"
+" S = modification of the mark
+" G = modification of the grouping (neumatic break)
+" M = melodic modification
+" - = addition of episema
+" > = augmentive liquescence
+" ~ = diminutive liquescence
+"
+" Pattern: modifier character (simple match within nabcSnippet)
+" Note: Uses same highlighting as GABC modifiers for consistency
+syntax match nabcGlyphModifier /[SGM\->~]/ contained containedin=nabcSnippet
+
+" NABC glyph modifier numeric suffix: 1-9 immediately after modifier
+" Uses positive lookbehind to match digit only after a glyph modifier
+syntax match nabcGlyphModifierNumber /\([SGM\->~]\)\@<=[1-9]/ contained containedin=nabcSnippet
+
+" NABC highlight groups for modifiers (reuse GABC modifier styling)
+highlight link nabcGlyphModifier SpecialChar
+highlight link nabcGlyphModifierNumber Number
+```
+
+**Key Decisions**:
+
+1. **Updated `nabcSnippet` container**: Added explicit `contains=nabcNeume,nabcGlyphModifier,nabcGlyphModifierNumber` parameter
+   - Previously, `nabcSnippet` had no `contains` clause, preventing child elements from activating
+   - Now properly contains both neume codes and their modifiers
+
+2. **Simple character class**: `/[SGM\->~]/` matches any of the 6 modifiers within NABC snippets
+   - No complex lookbehind to verify neume code precedes (simpler, more robust)
+   - Context containment in `nabcSnippet` already ensures correct scope
+
+3. **Lookbehind for suffix**: `/\([SGM\->~]\)\@<=[1-9]/` matches digits only after modifiers
+   - Prevents false matches on standalone digits
+   - Ensures suffix is visually connected to its modifier
+
+4. **Reused highlight groups**: `SpecialChar` for modifiers, `Number` for suffixes
+   - Maintains consistency with GABC modifier styling
+   - Reduces cognitive load for users familiar with GABC patterns
+
+**Testing**:
+
+Created three test scripts:
+
+1. **`tests/test_nabc_glyph_modifiers.sh`** (Vim-based, requires vim executable)
+   - 10 tests for all modifier types and suffixes
+   - Tests St. Gall (`stG1`) and Laon (`ocM`, `un~4`) neumes
+   - ⚠️ Skipped: No `vim` executable in system (nvim only)
+
+2. **`tests/test_nabc_modifier_patterns.sh`** (pattern matching validation)
+   - **7/7 tests passing** ✓
+   - Verifies syntax patterns defined in `syntax/gabc.vim`
+   - Validates highlight links and character classes
+   - Checks numeric suffix range `[1-9]`
+
+3. **`tests/visual_test_nabc_modifiers.sh`** (interactive visual test)
+   - Opens `examples/nabc_glyph_modifiers.gabc` in nvim
+   - Manual visual verification of highlighting
+
+Test results:
+```bash
+$ ./tests/test_nabc_modifier_patterns.sh
+Test 1: nabcGlyphModifier pattern defined... ✓ PASS
+Test 2: nabcGlyphModifierNumber pattern defined... ✓ PASS
+Test 3: nabcSnippet contains modifiers... ✓ PASS
+Test 4: nabcGlyphModifier highlight link... ✓ PASS
+Test 5: nabcGlyphModifierNumber highlight link... ✓ PASS
+Test 6: Modifier character class includes S,G,M,-,>,~... ✓ PASS
+Test 7: Number suffix accepts 1-9... ✓ PASS
+```
+
+**Example File** (`examples/nabc_glyph_modifiers.gabc`):
+
+```gabc
+name: NABC Glyph Modifiers Test;
+%%
+SimpleModifiers(e|viS|f|puG|g|taM|a|vi-|b|pu>|c|ta~)
+WithNumbers(e|viS1|f|puG2|g|taM3|a|vi-4|b|pu>5|c|ta~6)
+Compound(e|grS2|f|cl-3|g|peG4|a|poM5|b|to>6|c|ci~7)
+StGall(e|stS|f|stG1|g|st-2)
+Laon(e|ocM|f|ocG3|g|un~4)
+MaxSuffix(e|viS9|f|puG9|g|taM9|a|vi-9|b|pu>9|c|ta~9)
+```
+
+**Syntax Stack** (for `viS1`):
+
+```
+File
+ └─ gabcNotes (transparent region)
+     └─ gabcNotation (region)
+         └─ nabcSnippet (match with contains)
+             ├─ nabcNeume (vi)          → Keyword
+             ├─ nabcGlyphModifier (S)   → SpecialChar
+             └─ nabcGlyphModifierNumber (1) → Number
+```
+
+**Impact**:
+
+Before:
+```gabc
+(e|viS1|f|puG2|g|ta~3)
+   ^^^^    ^^^^    ^^^^  # Only neume codes highlighted
+```
+
+After:
+```gabc
+(e|viS1|f|puG2|g|ta~3)
+   🔵🟡🔢  🔵🟡🔢  🔵🟡🔢
+   vi S  1  pu G  2  ta ~  3
+   Keyword │ │   Keyword │ │  Keyword │ │
+           │ Number      │ Number     │ Number
+           SpecialChar   SpecialChar  SpecialChar
+```
+
+Users can now visually distinguish:
+- **Neume codes** (blue/Keyword): Core neume identity
+- **Modifiers** (yellow/SpecialChar): Glyph alterations
+- **Suffixes** (orange/Number): Modifier parameters
+
+**Limitations**:
+
+1. **No semantic validation**: Parser doesn't verify which modifiers are valid for which neumes
+   - Example: `viS9G3M2` is highlighted but may be invalid in Gregorio
+   - Compiler validation handles this, syntax highlighting is permissive
+
+2. **No position enforcement**: Modifiers after GABC pitches are also highlighted
+   - Pattern: `/[SGM\->~]/` matches in any `nabcSnippet` context
+   - Acceptable trade-off for simplicity
+
+3. **Character collision with GABC**: `-`, `>`, `~` also valid GABC modifiers
+   - Context (NABC snippet vs GABC snippet) prevents conflicts
+   - No visual ambiguity for users
+
+**Files Changed**:
+
+- `syntax/gabc.vim`: Updated `nabcSnippet` contains, added 2 new syntax patterns
+- `tests/test_nabc_modifier_patterns.sh`: 7 pattern validation tests (all passing)
+- `tests/visual_test_nabc_modifiers.sh`: Interactive visual verification script
+- `examples/nabc_glyph_modifiers.gabc`: Comprehensive example file
+
+**Lessons Learned**:
+
+1. **`contains=` is mandatory for nested syntax**: Without explicit `contains=`, child patterns never activate inside parent matches
+2. **Lookbehind for context-sensitive suffixes**: Suffix patterns need lookbehind to avoid false matches
+3. **Reusing highlight groups maintains consistency**: GABC and NABC modifiers share visual language
+4. **Simple patterns > complex ones**: Character class simpler and more robust than neume-aware lookbehind
+5. **Test infrastructure matters**: Pattern validation tests work when runtime tests can't (missing dependencies)
+
+---
+
 ## Syntax Highlighting Reference Table
 
 ### Complete Element-to-Highlight Mapping
@@ -3731,6 +3933,8 @@ Users can now visually distinguish NABC neume codes from arbitrary text, improvi
 | Element-level macro | `[em0]` - `[em9]` | `gabcMacroElement` | `Function` + `Number` | Function, Number | Predefined element pattern (identifier: Function, digit: Number) |
 | **NABC Neumes (St. Gall and Laon)** |
 | NABC neume code | `vi` `pu` `ta` `gr` `cl` `pe` `po` `to` `ci` `sc` `pf` `sf` `tr` `st` `ds` `ts` `tg` `bv` `tv` `pq` `pr` `pi` `vs` `or` `sa` `ql` `qi` `pt` `ni` `oc` `un` | `nabcNeume` | `Keyword` | Keyword | St. Gall/Laon neume codes (31 total) |
+| NABC glyph modifier | `S` `G` `M` `-` `>` `~` | `nabcGlyphModifier` | `SpecialChar` | SpecialChar | Neume glyph modifiers (mark, grouping, melodic, episema, liquescence) |
+| NABC modifier suffix | `1-9` | `nabcGlyphModifierNumber` | `Number` | Number | Numeric suffix for glyph modifiers |
 | **Generic Pitch Attributes** |
 | Divisio minor | `;` | `gabcBarMinor` | `Special` | Special | Half bar (minor division) |
 | Divisio minor suffix | `1-8` | `gabcBarMinorSuffix` | `Number` | Number | Minor bar variant (after ;) |
@@ -4862,6 +5066,8 @@ gabcNotes                               - Notes region: from %% to end of file
 | `gabcMacroIdentifier` | `Function` | Macro identifier (nm/gm/em) |
 | `gabcMacroNumber` | `Number` | Macro parameter digit (0-9) |
 | `nabcNeume` | `Keyword` | NABC neume codes (vi, pu, ta, gr, cl, pe, po, to, ci, sc, pf, sf, tr, st, ds, ts, tg, bv, tv, pq, pr, pi, vs, or, sa, ql, qi, pt, ni, oc, un) |
+| `nabcGlyphModifier` | `SpecialChar` | NABC glyph modifiers (S, G, M, -, >, ~) |
+| `nabcGlyphModifierNumber` | `Number` | NABC modifier numeric suffix (1-9) |
 
 ### Notes on Syntax Organization
 
@@ -5085,6 +5291,6 @@ Veja seção **Roadmap Tree-sitter** para plano de implementação.
 
 ---
 
-**Document Version**: 1.9  
-**Last Updated**: October 16, 2024  
+**Document Version**: 2.0  
+**Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim
