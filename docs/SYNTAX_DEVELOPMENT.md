@@ -1909,6 +1909,224 @@ This guide provides a blueprint for developing similar systems across any platfo
 
 ---
 
+## Complete Syntax Hierarchy
+
+This section provides a hierarchical view of all syntax elements defined in `syntax/gabc.vim`. Elements are organized by their containment relationships, with brief descriptions of their purpose.
+
+### Top-Level Structure
+
+```
+gabcSectionSeparator                    - Section separator (%%): divides header from notes
+gabcComment                             - Comments: lines or inline text starting with %
+
+gabcHeaders                             - Header region: from file start to %%
+├─ gabcHeaderField                      - Header field name (before colon)
+├─ gabcHeaderColon                      - Colon separator (:) between field and value
+├─ gabcHeaderValue                      - Header field value (after colon, before semicolon)
+└─ gabcHeaderSemicolon                  - Semicolon terminator (;) ending header line
+
+gabcNotes                               - Notes region: from %% to end of file
+├─ gabcSyllable                         - Text syllables: lyric text outside notation
+│  ├─ gabcLyricCentering                - Lyric centering: {...} groups letters for centering
+│  │  └─ gabcLyricCenteringDelim        - Delimiters: { and } brackets
+│  │
+│  ├─ gabcTranslation                   - Translation text: [...] alternative text
+│  │  └─ gabcTranslationDelim           - Delimiters: [ and ] brackets
+│  │
+│  ├─ gabcBoldTag                       - Bold formatting: <b>text</b>
+│  │  ├─ gabcTagBracket                 - Tag brackets: < and >
+│  │  ├─ gabcTagSlash                   - Closing tag slash: /
+│  │  ├─ gabcTagName                    - Tag name: b, c, i, sc, tt, ul, etc.
+│  │  └─ gabcBoldText                   - Bold formatted text content
+│  │
+│  ├─ gabcColorTag                      - Color formatting: <c>text</c>
+│  │  └─ gabcColorText                  - Colored text content
+│  │
+│  ├─ gabcItalicTag                     - Italic formatting: <i>text</i>
+│  │  └─ gabcItalicText                 - Italic formatted text content
+│  │
+│  ├─ gabcSmallCapsTag                  - Small caps formatting: <sc>text</sc>
+│  │  └─ gabcSmallCapsText              - Small caps text content
+│  │
+│  ├─ gabcTeletypeTag                   - Teletype/monospace formatting: <tt>text</tt>
+│  │  └─ gabcTeletypeText               - Teletype formatted text content
+│  │
+│  ├─ gabcUnderlineTag                  - Underline formatting: <ul>text</ul>
+│  │  └─ gabcUnderlineText              - Underlined text content
+│  │
+│  ├─ gabcClearTag                      - Clear formatting: <clear></clear> resets styles
+│  │
+│  ├─ gabcElisionTag                    - Elision marker: <e>text</e> for elided syllables
+│  │  └─ gabcElisionText                - Elided text content
+│  │
+│  ├─ gabcEuouaeTag                     - EUOUAE marker: <eu></eu> for psalm endings
+│  │
+│  ├─ gabcNoLineBreakTag                - No line break: <nlba></nlba> prevents line breaks
+│  │
+│  ├─ gabcProtrusionTag                 - Protrusion control: <pr:0.5>text</pr> adjusts spacing
+│  │  ├─ gabcProtrusionTagName          - Tag name: pr
+│  │  ├─ gabcProtrusionColon            - Colon separator: :
+│  │  └─ gabcProtrusionNumber           - Protrusion value: decimal number
+│  │
+│  ├─ gabcAboveLinesTextTag             - Above-lines text: <alt>text</alt> displays above staff
+│  │  └─ gabcAboveLinesText             - Text content displayed above staff
+│  │
+│  ├─ gabcSpecialTag                    - Special formatting: <sp>text</sp> custom style
+│  │  └─ gabcSpecialText                - Special formatted text content
+│  │
+│  └─ gabcVerbatimTag                   - Verbatim LaTeX: <v>LaTeX code</v>
+│     ├─ gabcVerbatimDelim              - Delimiters: <v> and </v> tags
+│     └─ @texSyntax                     - Embedded LaTeX syntax highlighting
+│
+├─ gabcClef                             - Clef notation: (c3), (cb4), (f2), etc.
+│  ├─ gabcClefLetter                    - Clef type: c, cb, or f
+│  ├─ gabcClefNumber                    - Staff line number: 1-4
+│  └─ gabcClefConnector                 - Clef change connector: @ symbol
+│
+└─ gabcNotation                         - Musical notation: (...) parenthesized groups
+   ├─ gabcNotationDelim                 - Delimiters: ( and ) parentheses
+   │
+   ├─ gabcSnippetDelim                  - Snippet separator: | divides GABC/NABC
+   │
+   ├─ gabcSnippet                       - GABC notation snippet: Gregorian musical elements
+   │  │
+   │  ├─ gabcPitch                      - Pitch letters: a-p (excl. o), A-P (inclinatum)
+   │  │  └─ gabcPitchSuffix             - Inclinatum direction: 0 (left), 1 (right), 2 (none)
+   │  │
+   │  ├─ gabcAccidental                 - Pitch accidentals: includes pitch + modifier
+   │  │  │                               - Forms: [pitch]x (flat), [pitch]# (sharp)
+   │  │  │                                        [pitch]y (natural), [pitch]## (soft sharp)
+   │  │  │                                        [pitch]Y (soft natural)
+   │  │  │                                        [pitch]x?, [pitch]#?, [pitch]y? (cautionary)
+   │  │
+   │  ├─ gabcInitioDebilis              - Initio debilis: - before pitch (weakened start)
+   │  │
+   │  ├─ gabcOriscus                    - Oriscus marks: o (oriscus), O (scapus)
+   │  │  └─ gabcOriscusSuffix           - Oriscus direction: 0 or 1
+   │  │
+   │  ├─ gabcModifierSimple             - Single-char modifiers after pitch:
+   │  │                                  - q (quadratum), w (quilisma), W (quilisma quadratum)
+   │  │                                  - v (virga right), V (virga left)
+   │  │                                  - s (stropha), ~ (liquescent deminutus)
+   │  │                                  - < (augmented liq.), > (diminished liq.)
+   │  │                                  - = (linea), r (punctum cavum)
+   │  │                                  - R (punctum quad. with lines)
+   │  │
+   │  ├─ gabcModifierCompound           - Multi-char compound modifiers:
+   │  │                                  - vv (bivirga), vvv (trivirga)
+   │  │                                  - ss (distropha), sss (tristropha)
+   │  │
+   │  └─ gabcModifierSpecial            - Special modifier sequences:
+   │                                     - r0 (punctum cavum with lines)
+   │
+   └─ nabcSnippet                       - NABC notation snippet: St. Gall adiastematic neumes
+                                         (Container for future NABC-specific elements)
+```
+
+### Syntax Element Categories
+
+#### 1. **Structural Elements**
+- **gabcSectionSeparator**: Mandatory `%%` line separating header from notes
+- **gabcHeaders**: Top region containing metadata (title, author, mode, etc.)
+- **gabcNotes**: Bottom region containing musical notation and lyrics
+- **gabcComment**: Comments starting with `%` (excluded from processing)
+
+#### 2. **Header Components**
+- **gabcHeaderField**: Metadata field names (e.g., `name`, `office-part`, `mode`)
+- **gabcHeaderValue**: Field content values
+- **Delimiters**: Colon (`:`) and semicolon (`;`)
+
+#### 3. **Musical Notation Container**
+- **gabcNotation**: Parenthesized groups `(...)` containing musical elements
+- **gabcSnippet**: GABC notation (Gregorian chant)
+- **nabcSnippet**: NABC notation (St. Gall neumes)
+- **gabcSnippetDelim**: Pipe `|` separator between notation types
+
+#### 4. **Pitch System**
+- **gabcPitch**: Letters a-p (excluding o) for staff positions
+  - Lowercase: punctum quadratum (square notes)
+  - Uppercase: punctum inclinatum (slanted notes)
+- **gabcPitchSuffix**: Direction indicators (0/1/2) for inclinatum notes
+- **gabcAccidental**: Pitch alterations (flats, sharps, naturals)
+
+#### 5. **Note Modifiers**
+- **gabcInitioDebilis**: `-` prefix for weakened note starts
+- **gabcOriscus**: `o`/`O` for oriscus neume marks
+- **gabcModifierSimple**: Single-character shape/articulation modifiers
+- **gabcModifierCompound**: Multi-character sequences (bivirga, tristropha)
+- **gabcModifierSpecial**: Special notation combinations
+
+#### 6. **Text Formatting**
+- **Basic Formatting**: Bold, italic, underline, small caps, teletype, color
+- **Lyric Control**: Centering `{...}`, translation `[...]`, elision `<e>`
+- **Special Tags**: EUOUAE markers, line break control, protrusion adjustment
+- **LaTeX Integration**: Verbatim `<v>` tags with embedded TeX syntax
+
+#### 7. **Staff Elements**
+- **gabcClef**: Clef indicators (c1-c4, cb1-cb4, f1-f4)
+- **gabcClefConnector**: `@` for mid-line clef changes
+
+#### 8. **Lyric Text**
+- **gabcSyllable**: Sung text syllables between notations
+- Container for all text formatting tags and special markers
+
+### Highlight Group Assignments
+
+| Syntax Element | Highlight Group | Visual Style |
+|----------------|-----------------|--------------|
+| `gabcComment` | `Comment` | Dimmed/italic commentary text |
+| `gabcSectionSeparator` | `Special` | Emphasized separator line |
+| `gabcHeaderField` | `Keyword` | Bold field names |
+| `gabcHeaderColon` | `Operator` | Separator punctuation |
+| `gabcHeaderValue` | `String` | Quoted-style values |
+| `gabcHeaderSemicolon` | `Delimiter` | Terminator punctuation |
+| `gabcClefLetter` | `Keyword` | Clef type identifiers |
+| `gabcClefNumber` | `Number` | Staff line numbers |
+| `gabcClefConnector` | `Operator` | Clef change symbols |
+| `gabcPitch` | `Character` | Note pitch letters |
+| `gabcPitchSuffix` | `Number` | Direction indicators |
+| `gabcAccidental` | `Function` | Pitch alteration symbols |
+| `gabcInitioDebilis` | `Identifier` | Note weakening prefix |
+| `gabcOriscus` | `Identifier` | Special neume marks |
+| `gabcOriscusSuffix` | `Number` | Oriscus direction |
+| `gabcModifier*` | `Identifier` | Shape/articulation modifiers |
+| `gabcNotationDelim` | `Delimiter` | Notation parentheses |
+| `gabcSnippetDelim` | `Operator` | GABC/NABC separator |
+| `gabcTagBracket` | `Delimiter` | Tag angle brackets |
+| `gabcTagName` | `Keyword` | Tag identifiers |
+| `gabcBoldText` | *Bold style* | Rendered bold |
+| `gabcItalicText` | *Italic style* | Rendered italic |
+| `gabcUnderlineText` | *Underline style* | Rendered underlined |
+| `gabcColorText` | `Special` | Colored rendering |
+| `gabcSmallCapsText` | `Identifier` | Small capitals |
+| `gabcTeletypeText` | `Constant` | Monospace font |
+| `gabcTranslation` | `String` | Alternative text |
+| `gabcLyricCentering` | `Special` | Centered groups |
+| `gabcVerbatimDelim` | `Delimiter` | LaTeX tag boundaries |
+| `@texSyntax` | *(TeX highlighting)* | Embedded LaTeX code |
+
+### Notes on Syntax Organization
+
+1. **Containment Hierarchy**: Elements are defined with strict `contained` and `containedin` relationships to prevent unintended matches across regions.
+
+2. **Precedence Order**: Vim syntax matching uses "last defined wins" for overlapping patterns:
+   - Compound modifiers (`vvv`, `sss`) defined **after** simple (`v`, `s`)
+   - Specific patterns (accidentals with `?`) defined **after** basic forms
+   - Tag content defined **after** tag delimiters
+
+3. **Region Strategy**: 
+   - `gabcHeaders` and `gabcNotes` divide the file
+   - `gabcNotation` creates notation islands within lyric text
+   - Tags create formatting islands within syllables
+
+4. **Transparency**: Many elements use `transparent` to allow nested highlighting without blocking contained patterns.
+
+5. **External Syntax**: LaTeX syntax included via `@texSyntax` cluster for `<v>` verbatim tags.
+
+This hierarchical structure ensures accurate, context-aware highlighting throughout GABC documents while maintaining clarity and maintainability of the syntax definition.
+
+---
+
 ## Additional Resources
 
 ### GABC Specification
@@ -1927,6 +2145,6 @@ This guide provides a blueprint for developing similar systems across any platfo
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: October 15, 2025  
+**Document Version**: 1.1  
+**Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim
