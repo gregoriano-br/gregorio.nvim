@@ -102,8 +102,37 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation transparent
 
 " NABC snippet: All subsequent positions (after pipe delimiter)
-" This is a placeholder for future NABC-specific syntax elements
-syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation transparent
+" Contains St. Gall and Laon neume codes
+" Note: NOT transparent - contains specific NABC syntax elements
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation
+
+" ============================================================================
+" NABC NEUMES: St. Gall and Laon neume codes
+" ============================================================================
+" Unified list from St. Gall and Laon codifications
+" These are keyword-like identifiers for specific neume shapes in early notation
+
+" NABC neume codes (2-letter codes)
+" Common to both St. Gall and Laon:
+" vi=virga, pu=punctum, ta=tractulus, gr=gravis, cl=clivis, pe=pes, po=porrectus
+" to=torculus, ci=climacus, sc=scandicus, pf=porrectus flexus, sf=scandicus flexus
+" tr=torculus resupinus, or=oriscus, ds=distropha, ts=tristropha, tg=trigonus
+" bv=bivirga, tv=trivirga, pr=pressus maior, pi=pressus minor, vs=virga strata
+" sa=scandicus, pq=pes quassus, ql=quilisma, pt=pes stratus, ni=nihil (placeholder)
+"
+" St. Gall specific:
+" st=stropha
+"
+" Laon specific:
+" oc=oriscus-clivis, un=uncinus
+"
+" Pattern: 2-letter codes, case-sensitive
+" Must use simple pattern without word boundaries since NABC codes can be
+" followed by modifiers (-, ~, ', etc.) without spaces
+syntax match nabcNeume /\(vi\|pu\|ta\|gr\|cl\|pe\|po\|to\|ci\|sc\|pf\|sf\|tr\|st\|ds\|ts\|tg\|bv\|tv\|pq\|pr\|pi\|vs\|or\|sa\|ql\|qi\|pt\|ni\|oc\|un\)/ contained containedin=nabcSnippet
+
+" NABC neume highlight group
+highlight link nabcNeume Keyword
 
 " GABC pitches: a-p (excluding 'o'), both lowercase (punctum quadratum) and uppercase (punctum inclinatum)
 " Lowercase: a b c d e f g h i j k l m n p (punctum quadratum - square note)
