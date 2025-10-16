@@ -104,7 +104,7 @@ syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation trans
 " NABC snippet: All subsequent positions (after pipe delimiter)
 " Contains St. Gall and Laon neume codes
 " Note: NOT transparent - contains specific NABC syntax elements
-syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcNeume,nabcGlyphModifier,nabcGlyphModifierNumber
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcNeume,nabcGlyphModifier,nabcGlyphModifierNumber,nabcPitchDescriptorH,nabcPitchDescriptorPitch
 
 " ============================================================================
 " NABC NEUMES: St. Gall and Laon neume codes
@@ -156,6 +156,20 @@ syntax match nabcGlyphModifierNumber /\([SGM\->~]\)\@<=[1-9]/ contained containe
 " NABC highlight groups for modifiers (reuse GABC modifier styling)
 highlight link nabcGlyphModifier SpecialChar
 highlight link nabcGlyphModifierNumber Number
+
+" NABC PITCH DESCRIPTOR: Elevates or lowers the neume relative to others
+" Follows immediately after glyph modifier (if present) or neume code
+" Format: 'h' followed by pitch letter [a-np]
+" Example: viha (virga at pitch 'a'), puShb (punctum with S modifier at pitch 'b')
+"
+" 'h' = height/pitch descriptor indicator (highlighted as Function)
+" [a-np] = target pitch (highlighted as parameter, like function argument)
+syntax match nabcPitchDescriptorH /h/ contained containedin=nabcSnippet
+syntax match nabcPitchDescriptorPitch /\(h\)\@<=[a-np]/ contained containedin=nabcSnippet
+
+" NABC pitch descriptor highlight groups
+highlight link nabcPitchDescriptorH Function
+highlight link nabcPitchDescriptorPitch Identifier
 
 " GABC pitches: a-p (excluding 'o'), both lowercase (punctum quadratum) and uppercase (punctum inclinatum)
 " Lowercase: a b c d e f g h i j k l m n p (punctum quadratum - square note)
