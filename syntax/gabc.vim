@@ -75,28 +75,34 @@ highlight link gabcClefConnector Operator
 syntax region gabcLyricCentering matchgroup=gabcLyricCenteringDelim start=/{/ end=/}/ keepend oneline containedin=gabcNotes
 
 " Translation delimiters: [...] for alternative translation text
-" Must be defined before gabcSyllable and appear before () in syllables
 syntax region gabcTranslation matchgroup=gabcTranslationDelim start=/\[/ end=/\]/ keepend oneline containedin=gabcNotes
 
 " Musical notation: (...) contains alternating GABC and NABC snippets separated by |
 " Structure: (gabc1|nabc1|gabc2|nabc2|...)
-syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepend oneline containedin=gabcNotes contains=gabcSnippet,nabcSnippet transparent
+syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepend oneline containedin=gabcNotes
 
-" GABC snippet: First snippet after ( up to | or )
-" This is a container for future GABC-specific notation elements  
-" Use a simpler pattern: match everything that's not | or )
-" Note: The /\@ construct is a negative zero-width assertion in Vim regex
-" Matches content inside parentheses (entire musical snippet), excluding the parentheses themselves
-" This allows for highlighting of its contained elements (pitches, modifiers, etc.)
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcModifierEpisema,gabcModifierEpisemaNumber,gabcModifierIctus,gabcModifierIctusNumber,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcAttrChoralSign,gabcAttrChoralNabc,gabcAttrBrace,gabcAttrStemLength,gabcAttrLedgerLines,gabcAttrSlur,gabcAttrEpisemaTune,gabcAttrAboveLinesText,gabcAttrVerbatimNote,gabcAttrVerbatimGlyph,gabcAttrVerbatimElement,gabcAttrNoCustos,gabcMacroNote,gabcMacroGlyph,gabcMacroElement,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue,gabcBarDouble,gabcBarDotted,gabcBarMaior,gabcBarMinor,gabcBarMinima,gabcBarMinimaOcto,gabcBarVirgula,gabcBarMinorSuffix,gabcBarZeroSuffix,gabcCustos,gabcLineBreak,gabcLineBreakSuffix transparent
+" KNOWN LIMITATION: Perfect GABC/NABC alternation is not possible with Vim syntax
+" Vim's regex-based syntax engine does not support stateful alternation (counting delimiters).
+" Multiple approaches were attempted:
+" 1. Regions with lookbehinds - failed (snippets not activated)
+" 2. Matchgroup + nextgroup chains - failed (region conflicts)
+" 3. Position-specific patterns with \@<= - failed (lookbehind doesn't work inside regions)
+" 4. Numbered regions with nextgroup - failed (all matched to last region)
+" 5. Variable-length lookbehind patterns - failed (incorrect matching)
+"
+" CURRENT APPROACH: Simple transparent groups for basic structure
+" - gabcSnippet: matches first snippet (after opening paren)
+" - nabcSnippet: matches subsequent snippets (after pipe delimiter)
+" - Both are transparent to allow GABC elements to highlight correctly
+" - Limitation: GABC elements may appear in NABC context (acceptable tradeoff)
+"
+" FUTURE IMPROVEMENT: Implement proper alternation using Tree-sitter parser
 
-" Snippet delimiter: | separates GABC and NABC snippets
-" Must be defined after gabcSnippet to not interfere with it
-syntax match gabcSnippetDelim /|/ contained containedin=gabcNotation
+" GABC snippet: First position (immediately after opening paren)
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation transparent
 
-" NABC snippet: Snippets after | delimiter up to next | or )
-" This is a container for future NABC-specific notation elements
-" Pattern matches after | up to next | or ) boundary
+" NABC snippet: All subsequent positions (after pipe delimiter)
+" This is a placeholder for future NABC-specific syntax elements
 syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation transparent
 
 " GABC pitches: a-p (excluding 'o'), both lowercase (punctum quadratum) and uppercase (punctum inclinatum)
