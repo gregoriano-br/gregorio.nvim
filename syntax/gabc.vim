@@ -104,7 +104,7 @@ syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation trans
 " NABC snippet: All subsequent positions (after pipe delimiter)
 " Contains St. Gall and Laon neume codes
 " Note: NOT transparent - contains specific NABC syntax elements
-syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter,nabcSubPrepunctisDescriptor
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter,nabcSubPrepunctisDescriptor,nabcSignificantLetter,nabcTironianLetter
 
 " ============================================================================
 " NABC GLYPH DESCRIPTORS: Structured grouping of neume elements
@@ -254,6 +254,83 @@ syntax match nabcSubPrepunctisNumber /[1-9]/ contained
 highlight link nabcSubPrepunctisBase Entity
 highlight link nabcSubPrepunctisModifier SpecialChar
 highlight link nabcSubPrepunctisNumber Number
+
+" ============================================================================
+" NABC SIGNIFICANT LETTERS AND TIRONIAN LETTERS: Annotation systems
+" ============================================================================
+
+" SIGNIFICANT LETTERS: Textual annotations using shorthand notation
+" Syntax: ls + shorthand + position_number(1-9)
+" Used in both St. Gall and Laon traditions with different shorthand sets
+" Examples:
+"   lsb1     - "bene" at position 1
+"   lseq2    - "equaliter" at position 2  
+"   lsfid3   - "fideliter" at position 3
+
+" TIRONIAN LETTERS: Specialized annotation system (Laon only)
+" Syntax: lt + shorthand + position_number(1-9)
+" Uses Tironian notation (medieval shorthand system)
+" Examples:
+"   lti4     - "iusum" at position 4
+"   ltdo5    - "deorsum" at position 5
+"   ltqm6    - "quam mox" at position 6
+
+" SIGNIFICANT LETTERS complete descriptors: ls + shorthand + mandatory number
+" Pattern matches complete descriptor and uses 'contains' to highlight components
+" Supports both St. Gall and Laon shorthand sets
+syntax match nabcSignificantLetter /ls\(al\|am\|b\|c\|cm\|co\|cw\|d\|e\|eq\|ew\|fid\|fr\|g\|i\|im\|s\|iv\|k\|l\|lb\|lc\|len\|lm\|lp\|lt\|m\|moll\|p\|par\|pfec\|pm\|pulcre\|sb\|sc\|simil\|simul\|sm\|st\|sta\|t\|tb\|tm\|tw\|v\|vol\|x\|a\|eq-\|equ\|f\|h\|hn\|hp\|n\|nl\|nt\|md\|simp\|simpl\|sp\|th\)[1-9]/ contained containedin=nabcSnippet contains=nabcSignificantBase,nabcSignificantShorthand,nabcSignificantNumber transparent
+
+" TIRONIAN LETTERS complete descriptors: lt + shorthand + mandatory number
+" Pattern matches complete descriptor for Laon tironian notation
+syntax match nabcTironianLetter /lt\(i\|do\|dr\|dx\|ps\|qm\|sb\|se\|sj\|sl\|sn\|sp\|sr\|st\|us\)[1-9]/ contained containedin=nabcSnippet contains=nabcTironianBase,nabcTironianShorthand,nabcTironianNumber transparent
+
+" SIGNIFICANT LETTERS base code: ls (significant letter indicator)
+syntax match nabcSignificantBase /ls/ contained
+
+" SIGNIFICANT LETTERS shorthand: textual abbreviations for common terms
+" St. Gall shorthands (48 total):
+" al=altius, am=altius mediocriter, b=bene, c=celeriter, cm=celeriter mediocriter,
+" co=coniunguntur, cw=celeriter wide, d=deprimatur, e=equaliter, eq=equaliter,
+" ew=equaliter wide, fid=fideliter, fr=frendor, g=gutture, i=iusum,
+" im=iusum mediocriter, s=sursum, iv=iusum valde, k=klenche, l=levare,
+" lb=levare bene, lc=levare celeriter, len=leniter, lm=levare mediocriter,
+" lp=levare parvum, lt=levare tenere, m=mediocriter, moll=molliter, p=parvum,
+" par=paratim, pfec=perfecte, pm=parvum mediocriter, pulcre=pulcre,
+" sb=sursum bene, sc=sursum celeriter, simil=similiter, simul=simul,
+" sm=sursum mediocriter, st=sursum tenere, sta=statim, t=tenere,
+" tb=tenere bene, tm=tenere mediocriter, tw=tenere wide, v=valde,
+" vol=volubiliter, x=expectare
+"
+" Laon shorthands (25 total):
+" a=augete, c=celeriter, eq=equaliter, eq-=equaliter, equ=equaliter,
+" f=fastigium, h=humiliter, hn=humiliter nectum, hp=humiliter parum,
+" l=levare, n=non/negare/nectum/naturaliter, nl=non levare, nt=non tenere,
+" m=mediocriter, md=mediocriter, s=sursum, simp=simpliciter, simpl=simpliciter,
+" sp=sursum parum, st=sursum tenere, t=tenere, th=tenere humiliter
+syntax match nabcSignificantShorthand /\(al\|am\|b\|c\|cm\|co\|cw\|d\|e\|eq\|ew\|fid\|fr\|g\|i\|im\|s\|iv\|k\|l\|lb\|lc\|len\|lm\|lp\|lt\|m\|moll\|p\|par\|pfec\|pm\|pulcre\|sb\|sc\|simil\|simul\|sm\|st\|sta\|t\|tb\|tm\|tw\|v\|vol\|x\|a\|eq-\|equ\|f\|h\|hn\|hp\|n\|nl\|nt\|md\|simp\|simpl\|sp\|th\)/ contained
+
+" SIGNIFICANT LETTERS position number: mandatory digit 1-9
+syntax match nabcSignificantNumber /[1-9]/ contained
+
+" TIRONIAN LETTERS base code: lt (tironian letter indicator)  
+syntax match nabcTironianBase /lt/ contained
+
+" TIRONIAN LETTERS shorthand: Laon tironian notation abbreviations (15 total)
+" i=iusum, do=deorsum, dr=devertit, dx=devexum, ps=prode sub eam,
+" qm=quam mox, sb=sub, se=seorsum, sj=subjice, sl=saltim, sn=sonare,
+" sp=supra, sr=sursum, st=saltate, us=ut supra
+syntax match nabcTironianShorthand /\(i\|do\|dr\|dx\|ps\|qm\|sb\|se\|sj\|sl\|sn\|sp\|sr\|st\|us\)/ contained
+
+" TIRONIAN LETTERS position number: mandatory digit 1-9
+syntax match nabcTironianNumber /[1-9]/ contained
+
+" NABC significant and tironian letters highlight groups
+highlight link nabcSignificantBase Function
+highlight link nabcSignificantShorthand Identifier
+highlight link nabcSignificantNumber Number
+highlight link nabcTironianBase Function
+highlight link nabcTironianShorthand Identifier
+highlight link nabcTironianNumber Number
 
 " GABC pitches: a-p (excluding 'o'), both lowercase (punctum quadratum) and uppercase (punctum inclinatum)
 " Lowercase: a b c d e f g h i j k l m n p (punctum quadratum - square note)

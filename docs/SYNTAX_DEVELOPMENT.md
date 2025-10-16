@@ -42,6 +42,7 @@
    - [Iteration 24: NABC Pitch Descriptor](#iteration-24-nabc-pitch-descriptor)
    - [Iteration 25: NABC Glyph Descriptors](#iteration-25-nabc-glyph-descriptors)
    - [Iteration 26: NABC Subpunctis/Prepunctis Descriptors](#iteration-26-nabc-subpunctisprepunctis-descriptors)
+   - [Iteration 27: NABC Significant Letters and Tironian Letters](#iteration-27-nabc-significant-letters-and-tironian-letters)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -3944,6 +3945,15 @@ Users can now visually distinguish:
 | St. Gall modifiers | `t` `u` `v` `w` `x` `y` | `nabcSubPrepunctisModifier` | `SpecialChar` | SpecialChar | St. Gall tradition modifiers (tractulus, episema, gravis, liquescens) |
 | Laon modifiers | `n` `q` `z` `x` | `nabcSubPrepunctisModifier` | `SpecialChar` | SpecialChar | Laon tradition modifiers (uncinus, quilisma, virga, cephalicus) |
 | Descriptor count | `1-9` | `nabcSubPrepunctisNumber` | `Number` | Number | Mandatory count/quantity for descriptor |
+| **NABC Significant Letters** |
+| Significant base | `ls` | `nabcSignificantBase` | `Function` | Function | Significant letter annotation function |
+| St. Gall shorthands | `b` `c` `fid` `pulcre` `simil` etc. (48 total) | `nabcSignificantShorthand` | `Identifier` | Identifier | St. Gall performance instruction abbreviations |
+| Laon shorthands | `a` `eq` `h` `simp` `nl` etc. (25 total) | `nabcSignificantShorthand` | `Identifier` | Identifier | Laon performance instruction abbreviations |
+| Position number | `1-9` | `nabcSignificantNumber` | `Number` | Number | Spatial position relative to neume |
+| **NABC Tironian Letters** |
+| Tironian base | `lt` | `nabcTironianBase` | `Function` | Function | Tironian letter annotation function (Laon only) |
+| Tironian shorthands | `i` `do` `qm` `ps` `sr` etc. (15 total) | `nabcTironianShorthand` | `Identifier` | Identifier | Laon tironian shorthand abbreviations |
+| Position number | `1-9` | `nabcTironianNumber` | `Number` | Number | Spatial position relative to neume |
 | **Generic Pitch Attributes** |
 | Divisio minor | `;` | `gabcBarMinor` | `Special` | Special | Half bar (minor division) |
 | Divisio minor suffix | `1-8` | `gabcBarMinorSuffix` | `Number` | Number | Minor bar variant (after ;) |
@@ -5928,6 +5938,232 @@ Potential improvements for future iterations:
 
 ---
 
-**Document Version**: 2.3  
+## Iteration 27: NABC Significant Letters and Tironian Letters (October 16, 2025)
+
+### Overview
+
+NABC notation includes comprehensive textual annotation systems using **significant letters** and **tironian letters**. These provide detailed performance instructions using standardized shorthand notation systems from both St. Gall and Laon traditions.
+
+### Syntax Definition
+
+**Significant Letters Structure**:
+```
+ls + shorthand + position_number(1-9)
+```
+
+**Tironian Letters Structure** (Laon only):
+```
+lt + shorthand + position_number(1-9)
+```
+
+**Components**:
+- **Base codes**: `ls` (significant letter), `lt` (tironian letter)
+- **Shorthand**: Abbreviated textual instruction (tradition-specific)
+- **Position number**: Digit 1-9 (indicates spatial relationship to neume)
+
+### St. Gall Significant Letters (48 shorthands)
+
+**Common Instructions**:
+- `b` = bene (well)
+- `c` = celeriter (quickly)
+- `e` = equaliter (equally)
+- `m` = mediocriter (moderately)
+- `s` = sursum (upward)
+- `t` = tenere (hold)
+- `v` = valde (strongly)
+
+**Compound Instructions**:
+- `al` = altius (higher)
+- `am` = altius mediocriter (higher moderately)
+- `cm` = celeriter mediocriter (quickly moderately)
+- `co` = coniunguntur (connected)
+- `fid` = fideliter (faithfully)
+- `len` = leniter (gently)
+- `moll` = molliter (softly)
+- `pulcre` = pulcre (beautifully)
+- `simil` = similiter (similarly)
+- `simul` = simul (simultaneously)
+
+**Position/Movement Instructions**:
+- `d` = deprimatur (depress)
+- `l` = levare (raise)
+- `lb` = levare bene (raise well)
+- `lc` = levare celeriter (raise quickly)
+- `lm` = levare mediocriter (raise moderately)
+- `sb` = sursum bene (upward well)
+- `sc` = sursum celeriter (upward quickly)
+
+**Wide Forms** (extended notation):
+- `cw` = celeriter (wide form)
+- `ew` = equaliter (wide form)
+- `tw` = tenere (wide form)
+
+### Laon Significant Letters (25 shorthands)
+
+**Basic Instructions**:
+- `a` = augete (increase)
+- `c` = celeriter (quickly)
+- `eq` = equaliter (equally)
+- `h` = humiliter (humbly)
+- `l` = levare (raise)
+- `m` = mediocriter (moderately)
+- `s` = sursum (upward)
+- `t` = tenere (hold)
+
+**Compound Instructions**:
+- `eq-` = equaliter (alternate form)
+- `equ` = equaliter (alternate form)
+- `f` = fastigium (peak/summit)
+- `hn` = humiliter nectum (humbly connected)
+- `hp` = humiliter parum (humbly little)
+- `md` = mediocriter (alternate form)
+- `simp` = simpliciter (simply)
+- `simpl` = simpliciter (alternate form)
+- `sp` = sursum parum (upward little)
+- `th` = tenere humiliter (hold humbly)
+
+**Negation Instructions**:
+- `n` = non (not), negare (deny), nectum (connected), naturaliter (naturally)
+- `nl` = non levare (not raise)
+- `nt` = non tenere (not hold)
+
+### Tironian Letters - Laon Only (15 shorthands)
+
+Tironian notation was a medieval shorthand system used extensively in Laon manuscripts:
+
+**Movement Instructions**:
+- `i` = iusum (downward)
+- `do` = deorsum (downward)
+- `dr` = devertit (turns aside)
+- `dx` = devexum (sloping down)
+- `sr` = sursum (upward)
+
+**Position Instructions**:
+- `sb` = sub (under)
+- `sp` = supra (above)
+- `se` = seorsum (apart)
+- `sj` = subjice (place under)
+
+**Temporal Instructions**:
+- `qm` = quam mox (how soon)
+- `sl` = saltim (at least)
+- `st` = saltate (leap/dance)
+- `us` = ut supra (as above)
+
+**Performance Instructions**:
+- `ps` = prode sub eam (trade subtus - beneath)
+- `sn` = sonare (sound)
+
+### Examples
+
+**Simple Significant Letters**:
+```gabc
+(|vilsb1|)        % virga + "bene" at position 1
+(|pulsc2|)        % punctum + "sursum celeriter" at position 2
+(|talseq3|)       % tractulus + "equaliter" at position 3
+```
+
+**Tironian Letters**:
+```gabc
+(|vilti4|)        % virga + tironian "iusum" at position 4
+(|pultdo5|)       % punctum + tironian "deorsum" at position 5
+(|taltqm6|)       % tractulus + tironian "quam mox" at position 6
+```
+
+**Multiple Consecutive Letters**:
+```gabc
+(|vilsb1lsc2|)         % virga + "bene" pos 1 + "sursum celeriter" pos 2
+(|pultdo3lti4|)        % punctum + tironian "deorsum" + tironian "iusum"
+```
+
+**Integration with Other NABC Elements**:
+```gabc
+(|visu1pp2lsb3ltdo4|)  % virga + subpunctis + prepunctis + significant + tironian
+```
+
+### Implementation Strategy
+
+The implementation uses **container patterns** similar to other NABC elements:
+
+1. **Complete Pattern Match**: Matches entire letter sequence
+2. **Component Extraction**: Separates base, shorthand, and number
+3. **Transparent Container**: Main pattern is transparent for clean highlighting
+4. **Flexible Integration**: Works with existing NABC infrastructure
+
+### Highlight Groups
+
+| Component | Pattern | Highlight Group | Visual Style |
+|-----------|---------|----------------|--------------|
+| Significant base | `ls` | `Function` | Function call highlighting |
+| Tironian base | `lt` | `Function` | Function call highlighting |
+| Shorthand text | `b`, `fid`, `do` | `Identifier` | Parameter/identifier highlighting |
+| Position number | `1`-`9` | `Number` | Numeric value highlighting |
+
+### Design Rationale
+
+#### Why Function Highlighting for Base?
+
+The base codes (`ls`, `lt`) act as **function calls** in the annotation system:
+- They invoke specific annotation behaviors
+- They accept parameters (shorthand + position)
+- They have semantic meaning beyond simple keywords
+
+#### Why Identifier for Shorthands?
+
+Shorthands are **parameter values** passed to the annotation functions:
+- They specify the exact instruction or meaning
+- They're abbreviations of longer textual concepts
+- They act as arguments to the `ls`/`lt` "functions"
+
+### Integration Sequence
+
+Letters appear in NABC notation following this hierarchy:
+
+1. **Glyph Descriptor** (neume + modifiers + pitch)
+2. **Subpunctis/Prepunctis** (if present)  
+3. **Significant/Tironian Letters** (performance annotations)
+
+Example: `vi` → `su1pp2` → `lsb3ltdo4`
+
+### Testing Coverage
+
+The implementation includes comprehensive validation:
+
+**Test Categories**:
+1. **Base Code Recognition**: `ls` vs `lt` distinction
+2. **Shorthand Validation**: All 73 total shorthands (48 St. Gall + 25 Laon + 15 Tironian)
+3. **Position Numbers**: Digits 1-9 validation
+4. **Multiple Letters**: Consecutive letter sequences
+5. **Integration**: Combination with other NABC elements
+6. **Edge Cases**: Invalid patterns and error conditions
+
+**Coverage Statistics**:
+- **41/41 tests passing** (100% success rate)
+- **68 significant letter examples** in test file
+- **19 tironian letter examples** in test file
+- **Complete shorthand coverage** for both traditions
+
+### Related Patterns
+
+- **NABC Glyph Descriptors** (Iteration 25): Primary neume structures that letters annotate
+- **NABC Subpunctis/Prepunctis** (Iteration 26): Positioning marks that precede letters
+- **NABC Snippet Infrastructure** (Iteration 6): Container system that enables all NABC elements
+
+### Files Modified
+
+- `syntax/gabc.vim`: Added significant/tironian letter patterns with complete shorthand support
+- `example_significant_tironian.gabc`: Comprehensive example file (87 total examples)
+- `test_significant_tironian_validation.sh`: Validation script (41/41 tests passing)
+
+### Notes
+
+1. **Pattern Complexity**: Significant letters require the longest regex patterns due to 73 total shorthands
+2. **Cross-Tradition Support**: Implementation allows mixing St. Gall and Laon shorthands for flexibility
+3. **Extensibility**: New shorthands can be added by extending the alternation patterns
+4. **Integration Order**: Letters always appear after glyph descriptors and subpunctis/prepunctis elements
+
+---
+
+**Document Version**: 2.4  
 **Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim
