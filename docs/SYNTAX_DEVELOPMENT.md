@@ -36,6 +36,7 @@
    - [Iteration 20: Specialized Pitch Attributes](#iteration-20-specialized-pitch-attributes-semantic-types)
    - [Iteration 21: Macros (Notation Shortcuts)](#iteration-21-macros-notation-shortcuts)
    - [Appendix to Iteration 21: No-Custos Attribute](#appendix-to-iteration-21-no-custos-attribute)
+   - [Critical Bug Fix: gabcSyllable Region Containment](#critical-bug-fix-gabcsyllable-region-containment)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -120,6 +121,10 @@ Each iteration is documented with problem analysis, implementation details, test
 - **Test in Isolation**: Use `--noplugin -u NONE` to avoid interference from user configs
 - **Position Debugging**: Use `synstack()` instead of `synID()` for transparent containers
 - **Highlight Group Translation**: Some groups (Character, Number) translate to Constant in default colorschemes
+- **`contained` is Critical**: Elements meant to be region-scoped MUST have the `contained` keyword
+- **`containedin` is Not Sufficient**: `containedin=X` without `contained` allows global activation outside region X
+- **Test with Real Files**: Some bugs only manifest with complete, real-world files, not minimal test cases
+- **Region Boundaries**: Use precise boundary markers (`me=`, `ms=`) to prevent region overlap
 
 ---
 
@@ -3311,6 +3316,114 @@ highlight link gabcAttrNoCustos Keyword
 - Provides fine-grained control over custos rendering
 - Maintains semantic distinction between different attribute types
 - Boolean flag pattern can serve as template for similar attributes
+
+---
+
+### Critical Bug Fix: gabcSyllable Region Containment
+
+**Date**: October 16, 2025  
+**Commits**: `a4545e9`, `0fdc18f`
+
+**Problem**: User reported that all content before the first occurrence of `()`, including all header fields up to the `%%` separator, was being incorrectly highlighted as `gabcSyllable`. This meant that lines like `name: Test;` and `mode: 1;` were receiving lyric text highlighting instead of header field highlighting.
+
+**Root Cause Analysis**:
+
+The bug was caused by `gabcSyllable` being defined with `containedin=gabcNotes` but **without** the `contained` keyword:
+
+```vim
+" BUGGY (original):
+syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=... transparent
+```
+
+In Vim syntax highlighting:
+- `containedin=X` means "prefer to activate inside region X"
+- **WITHOUT** `contained` means "can also activate globally anywhere"
+- **WITH** `contained` means "ONLY activate when explicitly included in a contains= list"
+
+The combination of `containedin=gabcNotes` without `contained` caused:
+1. `gabcSyllable` would try to activate inside `gabcNotes` (as intended)
+2. BUT it could also activate **globally** outside any region (unintended!)
+3. The pattern `/[^()<>]\+/` matches any text without parentheses or angle brackets
+4. This matched header lines like `name: Confortamini;` before the `%%` separator
+5. Result: All header content was incorrectly styled as lyric syllables
+
+**Secondary Issues Discovered**:
+
+1. **Region Boundaries**: The original `gabcHeaders` and `gabcNotes` regions had problematic boundary definitions that allowed overlap
+2. **Region Activation**: `gabcNotes` was defined with `contained` but never explicitly included anywhere, causing it to never activate properly
+3. **Separator Handling**: The `%%` line was being included in both regions inconsistently
+
+**Solution**:
+
+**Primary Fix** (line 398):
+```vim
+" FIXED:
+syntax match gabcSyllable /[^()<>]\+/ contained containedin=gabcNotes contains=... transparent
+```
+
+Added the `contained` keyword to ensure `gabcSyllable` can **only** be activated inside `gabcNotes` region.
+
+**Region Boundary Improvements** (lines 38-42):
+```vim
+" Clear, non-overlapping region definitions
+syntax region gabcHeaders start=/\%^/ end=/^%%$/me=e-2 keepend
+syntax match gabcSectionSeparator /^%%$/ nextgroup=gabcNotes skipnl skipwhite skipempty
+syntax region gabcNotes start=/^/ end=/\%$/ keepend contains=gabcComment,gabcClef,gabcLyricCentering,gabcTranslation,gabcNotation,gabcSyllable contained
+```
+
+**Design Decisions**:
+
+1. **Explicit `contained` keyword**: Essential for region-scoped elements
+2. **Region boundaries**: Use `me=e-2` to exclude `%%` from headers, `contained` for notes
+3. **Separator as trigger**: Use `nextgroup=gabcNotes` to activate notes region after `%%`
+4. **Explicit contains list**: `gabcNotes` explicitly lists all allowed elements
+
+**Testing**:
+
+Created comprehensive test suite (`tests/batch_test.sh`):
+```bash
+# Validates header lines do NOT have gabcSyllable
+Line 1: ['gabcHeaderField']        ✅ PASS
+Line 8: ['gabcHeaderField']        ✅ PASS
+
+# Validates separator line has correct highlighting
+Line 9: ['gabcSectionSeparator']   ✅ PASS
+
+# Validates notes section DOES have gabcSyllable
+Line 10: ['gabcNotes', 'gabcSyllable'] ✅ PASS
+```
+
+Additional test files:
+- `tests/batch_test.sh` - Automated region boundary testing
+- `tests/test_example_file.sh` - Specific tests for example.gabc
+- `tests/debug_regions.gabc` - Minimal test case
+- `tests/minimal_test.gabc` - Another minimal case
+- `tests/debug_simple.sh` - Simple debug script
+
+All tests pass, including all 29+ existing plugin tests (no regressions).
+
+**Impact**:
+
+**Before Fix**:
+- Header lines: Incorrectly styled as `gabcSyllable` (lyric text style)
+- Visual confusion between metadata and musical content
+- Loss of semantic distinction between sections
+
+**After Fix**:
+- Header lines: Correctly styled as `gabcHeaderField` (Keyword) and `gabcHeaderValue` (String)
+- Clear visual separation between header metadata and musical notation
+- Proper region isolation as originally intended
+- All syntax highlighting works correctly in real-world GABC files
+
+**Lessons Learned**:
+
+1. **`contained` is Critical**: Any element meant to be region-scoped MUST have `contained` keyword
+2. **`containedin` is Not Enough**: `containedin=X` without `contained` allows global activation
+3. **Test with Real Files**: The bug only manifested with complete GABC files, not minimal test cases
+4. **Region Stack Visibility**: Use `synstack()` to debug which regions are actually active
+5. **Boundary Precision**: Region boundaries (`me=`, `ms=`) must be precisely defined to avoid overlap
+
+This was a **critical bug** that affected the fundamental structure and usability of GABC file highlighting. The fix ensures proper region isolation and semantic highlighting as originally designed.
 
 ---
 
