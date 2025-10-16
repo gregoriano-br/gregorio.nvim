@@ -85,7 +85,7 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " Note: The /\@ construct is a negative zero-width assertion in Vim regex
 " Matches content inside parentheses (entire musical snippet), excluding the parentheses themselves
 " This allows for highlighting of its contained elements (pitches, modifiers, etc.)
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcModifierEpisema,gabcModifierEpisemaNumber,gabcModifierIctus,gabcModifierIctusNumber,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcAttrChoralSign,gabcAttrChoralNabc,gabcAttrBrace,gabcAttrStemLength,gabcAttrLedgerLines,gabcAttrSlur,gabcAttrEpisemaTune,gabcAttrAboveLinesText,gabcAttrVerbatimNote,gabcAttrVerbatimGlyph,gabcAttrVerbatimElement,gabcMacroNote,gabcMacroGlyph,gabcMacroElement,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue,gabcBarDouble,gabcBarDotted,gabcBarMaior,gabcBarMinor,gabcBarMinima,gabcBarMinimaOcto,gabcBarVirgula,gabcBarMinorSuffix,gabcBarZeroSuffix,gabcCustos,gabcLineBreak,gabcLineBreakSuffix transparent
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcModifierEpisema,gabcModifierEpisemaNumber,gabcModifierIctus,gabcModifierIctusNumber,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcAttrChoralSign,gabcAttrChoralNabc,gabcAttrBrace,gabcAttrStemLength,gabcAttrLedgerLines,gabcAttrSlur,gabcAttrEpisemaTune,gabcAttrAboveLinesText,gabcAttrVerbatimNote,gabcAttrVerbatimGlyph,gabcAttrVerbatimElement,gabcAttrNoCustos,gabcMacroNote,gabcMacroGlyph,gabcMacroElement,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue,gabcBarDouble,gabcBarDotted,gabcBarMaior,gabcBarMinor,gabcBarMinima,gabcBarMinimaOcto,gabcBarVirgula,gabcBarMinorSuffix,gabcBarZeroSuffix,gabcCustos,gabcLineBreak,gabcLineBreakSuffix transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -324,6 +324,11 @@ syntax region gabcAttrVerbatimNote matchgroup=gabcAttrVerbatimDelim start=/\[nv:
 syntax region gabcAttrVerbatimGlyph matchgroup=gabcAttrVerbatimDelim start=/\[gv:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
 syntax region gabcAttrVerbatimElement matchgroup=gabcAttrVerbatimDelim start=/\[ev:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
 
+" NO CUSTOS: Suppress automatic custos rendering at line breaks
+" [nocustos] - prevents custos generation at natural line break point
+" Boolean flag attribute (no value required)
+syntax match gabcAttrNoCustos /\[nocustos\]/ contained containedin=gabcSnippet
+
 " MACROS: Predefined notation shortcuts at different scopes
 " [nm#] - note level macro (# = 0-9)
 " [gm#] - glyph level macro (# = 0-9)
@@ -557,6 +562,9 @@ highlight link gabcAttrAboveLinesText String
 
 " Verbatim TeX: embedded LaTeX code (delimiters only, content uses @texSyntax)
 highlight link gabcAttrVerbatimDelim Special
+
+" No custos: suppress automatic custos rendering
+highlight link gabcAttrNoCustos Keyword
 
 " Macros: predefined notation shortcuts (identifier as Function, number as Number)
 highlight link gabcMacroIdentifier Function
