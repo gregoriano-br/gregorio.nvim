@@ -28,6 +28,7 @@
    - [Iteration 13: Neume Fusions](#iteration-13-neume-fusions)
    - [Iteration 14: Neume Spacing Operators](#iteration-14-neume-spacing-operators)
    - [Iteration 15: Generic Pitch Attributes](#iteration-15-generic-pitch-attributes)
+   - [Iteration 16: Rhythmic and Articulation Modifiers](#iteration-16-rhythmic-and-articulation-modifiers)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -48,7 +49,7 @@ The goal is to provide a reference for developers (human or AI) building similar
 
 ### Development Journey
 
-The syntax highlighting system was built through **15 iterations** starting from the absolute basics:
+The syntax highlighting system was built through **16 iterations** starting from the absolute basics:
 
 **Foundation** (Iterations 0-2):
 - File structure and comments
@@ -1700,6 +1701,251 @@ son(g[test:1{]h[data:x}]i)
 
 ---
 
+### Iteration 16: Rhythmic and Articulation Modifiers
+
+**Goal**: Implement syntax highlighting for rhythmic and articulation modifiers
+
+**Commit**: `a665c8f` - feat: implement rhythmic and articulation modifiers
+
+#### Problem Analysis
+
+GABC provides several modifiers for rhythmic and articulation control beyond basic pitch modifiers:
+
+**Rhythmic Modifiers**:
+1. `.` - punctum mora vocis (rhythmic dot increasing note duration)
+2. `_` - horizontal episema (line indicating elongation), optionally with numeric suffix 0-5
+3. `'` - ictus (rhythmic accent mark), optionally with numeric suffix 0 or 1
+
+**Signs Above Staff** (`r1` through `r8`):
+- Various signs placed above the staff
+- Musica ficta alterations (r6-r8)
+- Accent marks (r1-r2)
+- Special symbols (r3-r5)
+
+**Design Requirements**:
+- Punctum mora: simple character modifier
+- Episema/Ictus: base modifier + optional numeric suffix
+- Numeric suffixes for episema and ictus should be highlighted as `Number`
+- Signs r1-r8: numbers are **part of the modifier name**, not separate suffixes
+- Must extend existing `r0` pattern (punctum cavum with lines) to `r[0-8]`
+
+#### Implementation
+
+**Punctum Mora** - Added to Simple Modifiers:
+```vim
+" Extended character class to include . (punctum mora)
+syntax match gabcModifierSimple /[qwWvVs~<>=rR.]/ contained containedin=gabcSnippet
+```
+
+**Pattern Analysis**:
+- Simply added `.` to the existing simple modifier character class
+- Seamless integration with other single-character modifiers
+
+**Signs Above Staff** - Extended Special Modifiers:
+```vim
+" Extended r0 to r[0-8] to include all signs
+syntax match gabcModifierSpecial /r[0-8]/ contained containedin=gabcSnippet
+```
+
+**Pattern Evolution**:
+- **Before**: `/r0/` (only punctum cavum with lines)
+- **After**: `/r[0-8]/` (includes r0 through r8)
+- Numbers are **not** highlighted separately (part of modifier name)
+
+**Horizontal Episema** - Base + Suffix:
+```vim
+" Base episema modifier
+syntax match gabcModifierEpisema /_/ contained containedin=gabcSnippet
+
+" Episema suffix: digit 0-5 immediately after _
+" Uses positive lookbehind to match only after _
+syntax match gabcModifierEpisemaNumber /\(_\)\@<=[0-5]/ contained containedin=gabcSnippet
+```
+
+**Pattern Analysis**:
+- `/_/` - matches underscore alone (e.g., `g_`)
+- `/\(_\)\@<=[0-5]/` - matches digits **only** when preceded by `_`
+- Lookbehind `\(_\)\@<=` ensures we don't capture unrelated numbers
+- Result: `g_0` → `_` (Identifier) + `0` (Number)
+
+**Ictus** - Base + Suffix:
+```vim
+" Base ictus modifier
+syntax match gabcModifierIctus /'/ contained containedin=gabcSnippet
+
+" Ictus suffix: digit 0 or 1 immediately after '
+" Uses positive lookbehind to match only after '
+syntax match gabcModifierIctusNumber /\('\)\@<=[01]/ contained containedin=gabcSnippet
+```
+
+**Pattern Analysis**:
+- `/'/` - matches apostrophe alone (e.g., `g'`)
+- `/\('\)\@<=[01]/` - matches 0 or 1 **only** when preceded by `'`
+- Lookbehind `\('\)\@<=` prevents capturing other digits
+- Result: `g'1` → `'` (Identifier) + `1` (Number)
+
+**Updated gabcSnippet Container**:
+```vim
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=...,gabcModifierEpisema,gabcModifierEpisemaNumber,gabcModifierIctus,gabcModifierIctusNumber,... transparent
+```
+
+**Highlight Links**:
+```vim
+" Rhythmic and articulation modifiers
+highlight link gabcModifierEpisema Identifier
+highlight link gabcModifierEpisemaNumber Number
+highlight link gabcModifierIctus Identifier
+highlight link gabcModifierIctusNumber Number
+```
+
+#### Testing
+
+**Created**: `tests/smoke/rhythmic_modifiers_test.gabc` (24 test cases)
+
+**Test Cases**:
+1. Punctum mora: `(g.h.i.)`
+2. Episema without suffix: `(g_h_i_)`
+3. Episema with all suffixes: `(g_0h_1i_2)`, `(g_3h_4i_5)`
+4. Ictus without suffix: `(g'h'i')`
+5. Ictus with suffixes: `(g'0h'1i'0)`
+6. Signs above staff r1-r5: `(gr1hr2ir3)`, `(gr4hr5)`
+7. Musica ficta r6-r8: `(gr6hr7ir8)`
+8. Combined modifiers: `(gv.h~_iw'0)`
+9. With accidentals: `(gx.hy_iz'1)`
+10. All episema suffixes: `(g_0h_1i_2j_3k_4l_5)`
+11. Ictus alternating: `(g'0h'1i'0j'1)`
+12. Multiple r modifiers: `(gr1gr2gr3...gr8)`
+13. With other modifiers: `(gv.hw.i~.)`
+14. Complex combinations: `(gvv_2h'1ir1jr6)`
+15. With uppercase pitches: `(G.H_0I'1)`
+16. With pitch suffixes: `(G0.H1_0I2'1)`
+17. With oriscus: `(go.ho1_i'0)`
+18. In fusions: `(f@g.@h_0@i'1)`, `(@[g.h_0i'1])`
+19. With spacing: `(g./h_0//i'1)`
+20. With pitch attributes: `(g.[shape:stroke]h_0[color:red]i'1[custom:test])`
+21. Edge case r0 vs r1: `(gr0gr1)`
+22. All episema suffixes in neume: `(gfedcba_0_1_2_3_4_5)`
+23. Compound modifiers: `(gvv.hss_0isss'1)`
+24. Full integration test: combining all features
+
+**Validation Script**: `tests/smoke/test_rhythmic_modifiers.sh`
+- 18 automated tests covering all modifier types
+- Tests for base modifiers and suffixes separately
+- Integration tests with existing features
+
+**Results**:
+- ✓ Punctum mora: `.` → `gabcModifierSimple` (Identifier)
+- ✓ Episema base: `_` → `gabcModifierEpisema` (Identifier)
+- ✓ Episema suffix: `0-5` → `gabcModifierEpisemaNumber` (Number)
+- ✓ Ictus base: `'` → `gabcModifierIctus` (Identifier)
+- ✓ Ictus suffix: `0-1` → `gabcModifierIctusNumber` (Number)
+- ✓ Signs r1-r8: `r[1-8]` → `gabcModifierSpecial` (Identifier, number not separate)
+- ✓ All 76+ existing tests still passing
+
+#### Challenges
+
+**Challenge 1**: Suffix Number Scope
+- **Problem**: Initial approach might capture all numbers, breaking pitch suffixes
+- **Solution**: Use positive lookbehind `\(_\)\@<=` and `\('\)\@<=` to only match after specific characters
+- **Verification**: Tested that `G0` (pitch suffix) is not affected by episema number pattern
+
+**Challenge 2**: Distinguishing r0 from r1-r8
+- **Problem**: Need `r0` (old modifier) to coexist with `r1-r8` (new modifiers)
+- **Solution**: Single pattern `r[0-8]` handles both
+- **Result**: Seamless integration without breaking existing `r0` usage
+
+**Challenge 3**: Apostrophe Character in VimScript
+- **Problem**: `'` is a string delimiter in VimScript
+- **Solution**: Properly escape in patterns: `/'/` works correctly
+- **Note**: No special escaping needed inside regex patterns
+
+**Challenge 4**: Two Different Semantics for Numbers
+- **Problem**: Episema/ictus numbers are **suffixes** (parameters), r1-r8 numbers are **part of name**
+- **Solution**: 
+  - Episema/ictus: Separate pattern for number with `Number` highlight
+  - r1-r8: Single pattern `r[0-8]` with `Identifier` highlight
+- **Rationale**: Reflects semantic difference between parameterized modifiers and named variants
+
+#### Semantic Rationale
+
+**Why separate highlighting for episema/ictus suffixes?**
+- Suffixes are **parameters** modifying the base behavior
+- Similar to function arguments or options
+- `Number` highlight emphasizes the parameterization
+- Example: `_2` reads as "episema with parameter 2"
+
+**Why unified highlighting for r1-r8?**
+- Numbers are **part of the identifier**, not parameters
+- Each r[n] is a distinct named modifier
+- Similar to named constants or enum values
+- Example: `r6` is "modifier r6" (musica ficta flat), not "r with parameter 6"
+
+**Why `Identifier` for all modifiers?**
+- Modifiers alter pitch identity/appearance
+- Consistent with other modifiers (v, s, w, etc.)
+- Distinguished from operators (spacing, fusion) and functions (tags, fusion collective)
+
+#### Example Visual Output
+
+```gabc
+% Punctum mora (simple modifier)
+Ky(g.h.i.)ri(e)
+    ^ ^ ^  punctum mora: Identifier
+
+% Episema with suffixes (base + number)
+e(g_0h_1i_2)le(h)
+   ^^ ^^ ^^  underscores: Identifier
+    ^  ^  ^  numbers: Number
+
+% Ictus with suffixes (base + number)
+son(g'0h'1i')
+    ^^ ^^ ^^  apostrophes: Identifier
+     ^  ^     numbers: Number
+
+% Signs above staff (unified modifier)
+Rex(gr1hr6ir8)
+    ^^^^^^^^^^^^^^  all as Identifier (numbers not separate)
+```
+
+#### Impact on System
+
+**Files Modified**:
+- `syntax/gabc.vim`: +23 lines (new modifier patterns + highlights)
+  - Extended `gabcModifierSimple` character class
+  - Extended `gabcModifierSpecial` from `r0` to `r[0-8]`
+  - Added 4 new syntax groups (Episema, EpisemaNumber, Ictus, IctusNumber)
+  - Added 4 new highlight links
+
+**Test Files**:
+- `tests/smoke/rhythmic_modifiers_test.gabc`: +73 lines (24 test cases)
+- `tests/smoke/test_rhythmic_modifiers.sh`: +233 lines (automated validation)
+
+**Backward Compatibility**: ✓ Perfect backward compatibility
+- All existing modifiers work unchanged
+- `r0` (punctum cavum) still works (now part of `r[0-8]`)
+- No conflicts with existing patterns
+
+**Integration**: ✓ Full integration tested
+- Works with accidentals, fusions, spacing, attributes
+- Works with uppercase/lowercase pitches, pitch suffixes
+- Works with oriscus, compound modifiers
+- 76+ existing tests all passing
+
+**Test Results**: ✓ All 24 new test cases pass
+
+**Semantic Evolution**:
+- **Simple modifiers**: Now includes `.` (punctum mora)
+- **Special modifiers**: Expanded from single `r0` to range `r[0-8]`
+- **New category**: Rhythmic modifiers with parameterized suffixes (episema, ictus)
+- **Design pattern**: Lookbehind for context-sensitive number matching
+
+**Documentation**:
+- Modifiers now cover: shape, articulation, rhythm, signs above staff
+- Clear distinction between simple, compound, special, and rhythmic modifiers
+- Comprehensive test coverage for all 11+ modifier types
+
+---
+
 ## Syntax Highlighting Reference Table
 
 ### Complete Element-to-Highlight Mapping
@@ -1773,6 +2019,13 @@ son(g[test:1{]h[data:x}]i)
 | Parenthesized natural | `gy?` | `gabcAccidental` | `Function` | Function | Cautionary natural |
 | Soft sharp | `g##` | `gabcAccidental` | `Function` | Function | Soft sharp (less prominent) |
 | Soft natural | `gY` | `gabcAccidental` | `Function` | Function | Soft natural (less prominent) |
+| **Rhythmic and Articulation Modifiers** |
+| Punctum mora | `.` | `gabcModifierSimple` | `Identifier` | Identifier | Rhythmic augmentation dot |
+| Episema marker | `_` | `gabcModifierEpisema` | `Identifier` | Identifier | Horizontal episema base marker |
+| Episema suffix | `0-5` | `gabcModifierEpisemaNumber` | `Number` | Number | Episema length parameter (after _) |
+| Ictus marker | `'` | `gabcModifierIctus` | `Identifier` | Identifier | Vertical stroke base marker |
+| Ictus suffix | `0-1` | `gabcModifierIctusNumber` | `Number` | Number | Ictus variant parameter (after ') |
+| Signs above staff | `r1-r8` | `gabcModifierSpecial` | `Identifier` | Identifier | Rhythmic signs above staff (r1=punctum mora) |
 | **Neume Fusions** |
 | Individual fusion connector | `f@g@h` | `gabcFusionConnector` | `Operator` | Operator | Connects pitches sequentially into neume |
 | Collective fusion function | `@[fgh]` | `gabcFusionFunction` | `Function` | Function | Function-style fusion delimiters (@[ and ]) |
@@ -2734,6 +2987,6 @@ This hierarchical structure ensures accurate, context-aware highlighting through
 
 ---
 
-**Document Version**: 1.3  
+**Document Version**: 1.4  
 **Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim
