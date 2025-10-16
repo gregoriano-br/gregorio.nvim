@@ -216,6 +216,23 @@ syntax match gabcBarZeroSuffix /\([,\^`]\)\@<=0/ contained containedin=gabcSnipp
 " NOTE: Custos uses lowercase pitch letters ONLY to indicate staff position
 syntax match gabcCustos /[a-np]+/ contained containedin=gabcSnippet
 
+" GABC LINE BREAKS: Force line breaks in the score
+" z = justified line break (text justified to width)
+" Z = ragged line break (text not justified, ragged right edge)
+" Suffixes:
+"   + = forced automatic custos
+"   - = no custos
+"   0 = special case for clef changes (z only)
+" Examples: z, Z, z+, Z+, z-, Z-, z0
+
+" Line break base symbols (z = justified, Z = ragged)
+syntax match gabcLineBreak /[zZ]/ contained containedin=gabcSnippet
+
+" Line break suffixes: + (custos), - (no custos), 0 (clef change - z only)
+" Use lookbehind to match only after line break symbols
+syntax match gabcLineBreakSuffix /\([zZ]\)\@<=[+-]/ contained containedin=gabcSnippet
+syntax match gabcLineBreakSuffix /\(z\)\@<=0/ contained containedin=gabcSnippet
+
 " GABC NEUME FUSIONS: @ connector for fusing notes into single neume
 " Two forms:
 " 1. Individual pitch fusion: f@g@h (connector between pitches)
@@ -418,6 +435,11 @@ highlight link gabcBarZeroSuffix Number
 
 " GABC custos: end-of-line guide showing next pitch
 highlight link gabcCustos Operator
+
+" GABC line breaks: force line breaks in the score
+" Statement highlight for clear differentiation from separation bars (Special)
+highlight link gabcLineBreak Statement
+highlight link gabcLineBreakSuffix Identifier
 
 " GABC accidentals: symbols indicating pitch alteration (includes pitch letter for position)
 highlight link gabcAccidental Function

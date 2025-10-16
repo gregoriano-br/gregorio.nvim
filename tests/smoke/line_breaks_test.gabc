@@ -1,0 +1,83 @@
+name: Line Breaks Test;
+%%
+
+% Test 1: Basic line breaks (z = justified, Z = ragged)
+(f) Jus(g)ti(h)fied z
+(i) Rag(j)ged Z
+
+% Test 2: Line break with forced custos (+)
+(f) With(g) cus(h)tos z+
+(i) Also(j) with Z+
+
+% Test 3: Line break without custos (-)
+(f) No(g) cus(h)tos z-
+(i) Also(j) no Z-
+
+% Test 4: Line break with clef change suffix (z0 only)
+(f) Clef(g) change z0
+
+% Test 5: Line breaks combined with divisio marks
+(f) Be(g)fore:: z bar
+(f) Af(g)ter z+ bar::
+
+% Test 6: Multiple line breaks in sequence
+(f) First(g) line z
+(h) Sec(i)ond z+
+(j) Third z-
+
+% Test 7: Justified vs ragged comparison
+(f) Jus(g)ti(h)fied z end
+(f) Rag(g)ged Z end
+
+% Test 8: All suffix combinations for z (justified)
+(f) Plain z
+(g) Plus z+
+(h) Minus z-
+(i) Zero z0
+
+% Test 9: All suffix combinations for Z (ragged)
+(f) Plain Z
+(g) Plus Z+
+(h) Minus Z-
+
+% Test 10: Line break with complex context
+(f) Com(g)plex(h[shape:virga]) z+ text
+
+% Test 11: Line break with spacing
+(f) Spa(g)cing// z
+
+% Test 12: Line break after various bar types
+(f) Vi(g)rgu(h)la` z
+(f) Mi(g)ni(h)ma, z+
+(f) Mi(g)nor; z-
+(f) Mai(g)or: z0
+
+% Test 13: Line break with fusion
+(f@g@h) Fu(i)sion z
+
+% Test 14: Line break in middle of text
+(f) Be(g)fore z af(h)ter
+
+% Test 15: Clef change example (practical use of z0)
+(f) Old(g) clef(h) (z0::c3) New(j) clef
+
+% Test 16: Edge case - z0 with bar
+(f) Change(g) z0::
+
+% Test 17: Line break with modifiers
+(f) Mo(g)di(h)fi'(i)ers_ z+
+
+% Test 18: Multiple line breaks with different types
+(f) Mix z type(g) Z+ test
+
+% Test 19: Line break after accidentals
+(fx) Ac(g#)ci(hy)den(i)tals z
+
+% Test 20: Invalid - Z0 should NOT match (0 only for z)
+(f) In(g)va(h)lid Z0 test
+
+% Test 21: Line break with pitch attributes
+(f[color:red]) At(g)tri(h)bute z+
+
+% Test 22: All elements together
+(fx[shape:virga]@g#/h_0'1) Com(i)plex:: z+ end
