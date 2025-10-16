@@ -104,7 +104,38 @@ syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation trans
 " NABC snippet: All subsequent positions (after pipe delimiter)
 " Contains St. Gall and Laon neume codes
 " Note: NOT transparent - contains specific NABC syntax elements
-syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcNeume,nabcGlyphModifier,nabcGlyphModifierNumber,nabcPitchDescriptorH,nabcPitchDescriptorPitch
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter
+
+" ============================================================================
+" NABC GLYPH DESCRIPTORS: Structured grouping of neume elements
+" ============================================================================
+
+" BASIC GLYPH DESCRIPTOR: neume + optional(glyph_modifier) + optional(pitch_descriptor)
+" This is the fundamental unit of NABC notation, representing a single neume
+" with its modifiers and pitch information.
+" Examples:
+"   vi       - simple neume (virga)
+"   viS      - neume with modifier
+"   viha     - neume with pitch descriptor
+"   viS2ha   - neume with modifier and pitch descriptor
+"
+" Pattern: Match complete sequence as a region
+" Region boundaries:
+"   start: neume code (2 letters)
+"   end: lookahead for non-modifier/non-pitch character or end of snippet
+syntax match nabcBasicGlyphDescriptor 
+  \ /\(vi\|pu\|ta\|gr\|cl\|pe\|po\|to\|ci\|sc\|pf\|sf\|tr\|st\|ds\|ts\|tg\|bv\|tv\|pq\|pr\|pi\|vs\|or\|sa\|ql\|qi\|pt\|ni\|oc\|un\)\([SGM\->~][1-9]\?\)\?\(h[a-np]\)\?/
+  \ contained containedin=nabcSnippet
+  \ contains=nabcNeume,nabcGlyphModifier,nabcGlyphModifierNumber,nabcPitchDescriptorH,nabcPitchDescriptorPitch
+  \ transparent
+
+" COMPLEX GLYPH DESCRIPTOR DELIMITER: '!' separates basic glyph descriptors
+" Used to concatenate multiple basic glyph descriptors into a complex descriptor
+" Example: vi!pu!ta (three basic descriptors forming a complex descriptor)
+syntax match nabcComplexGlyphDelimiter /!/ contained containedin=nabcSnippet
+
+" Highlight group for complex glyph descriptor delimiter
+highlight link nabcComplexGlyphDelimiter Delimiter
 
 " ============================================================================
 " NABC NEUMES: St. Gall and Laon neume codes

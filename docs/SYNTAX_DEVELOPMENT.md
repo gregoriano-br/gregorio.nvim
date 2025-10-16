@@ -5291,6 +5291,157 @@ Veja seção **Roadmap Tree-sitter** para plano de implementação.
 
 ---
 
-**Document Version**: 2.0  
+## Iteration 24: NABC Pitch Descriptor (October 16, 2025)
+
+### Context
+
+**Commit**: `e0b17b9`  
+**Branch**: `syntax-bootstrap`
+
+Implementação do pitch descriptor NABC, que serve para elevar ou rebaixar o neuma em relação aos demais. A sintaxe consiste na letra `h` seguida de uma letra indicando a altura (`a-p`, com range completo).
+
+### NABC Pitch Descriptor Specification
+
+#### Format
+```
+h<pitch>
+```
+
+Onde `<pitch>` é uma das letras: `a`, `b`, `c`, `d`, `e`, `f`, `g`, `h`, `i`, `j`, `k`, `l`, `m`, `n`, `o`, `p`
+
+#### Examples
+```
+nabc: vi(h1) - neuma vi com pitch descriptor h1
+nabc: pu(ha) - neuma pu com pitch descriptor ha
+nabc: ta(hn) - neuma ta com pitch descriptor hn
+```
+
+### Implementation
+
+#### Pattern Structure
+
+Utilizamos dois padrões complementares para realçar o pitch descriptor:
+
+1. **`nabcPitchDescriptorH`**: Realça a letra `h` inicial
+2. **`nabcPitchDescriptorPitch`**: Realça a letra de altura que segue o `h`
+
+```vim
+" NABC Pitch Descriptor - deve vir antes de nabc_glyph
+syntax match nabcPitchDescriptorH /h/ contained containedin=nabcSnippet
+syntax match nabcPitchDescriptorPitch /\(h\)\@<=[a-np]/ contained containedin=nabcSnippet
+```
+
+#### Technical Details
+
+1. **Lookbehind Assertion**: Usamos `\(h\)\@<=` para garantir que a letra de altura só é realçada quando precedida por `h`, sem incluir o `h` no match
+2. **Character Range**: O padrão `[a-np]` captura todas as letras de `a` a `p`, incluindo `o` e `p`
+3. **Containment**: Ambos os padrões são `contained` e `containedin=nabcSnippet` para funcionar apenas dentro de snippets NABC
+
+#### Highlight Groups
+
+```vim
+highlight default link nabcPitchDescriptorH Special
+highlight default link nabcPitchDescriptorPitch Identifier
+```
+
+**Color Scheme**: 
+- `nabcPitchDescriptorH` (Special): Amarelo escuro/alaranjado - destaca o indicador `h`
+- `nabcPitchDescriptorPitch` (Identifier): Ciano - destaca a letra de altura
+
+### Syntax Tree
+
+```
+nabc_snippet
+├── nabc_code (vi, pu, ta, etc.)
+├── nabc_glyph_modifier (S, G, M, -, >, ~)
+├── nabc_pitch_descriptor
+│   ├── nabcPitchDescriptorH (h)
+│   └── nabcPitchDescriptorPitch ([a-np])
+└── nabc_volume_descriptor (?, 1-9)
+```
+
+### Pattern Order
+
+**Importante**: O pitch descriptor deve ser definido **antes** do `nabc_glyph`, pois:
+1. O `h` pode ser confundido com o código de neuma `h` (trigon)
+2. Patterns mais específicos devem vir antes de patterns mais genéricos
+3. O lookbehind garante que apenas `h` seguido de letra de altura seja capturado
+
+### Testing
+
+#### Test Cases
+
+Criamos 10 casos de teste em `tests/test_nabc_pitch_descriptor.sh`:
+
+1. **Test 1**: `h` alone (não deve capturar)
+2. **Test 2**: `ha` (pitch descriptor completo)
+3. **Test 3**: `hn` (pitch máximo)
+4. **Test 4**: `ho` (letra permitida)
+5. **Test 5**: `hp` (letra permitida)
+6. **Test 6**: `hz` (fora do range, não captura)
+7. **Test 7**: `vi(ha)` (neuma com pitch descriptor)
+8. **Test 8**: `pu(hm)` (neuma com pitch descriptor)
+9. **Test 9**: Múltiplos pitch descriptors
+10. **Test 10**: Lookbehind verification (captura apenas letra após `h`)
+
+#### Test Results
+```bash
+$ ./tests/test_nabc_pitch_descriptor.sh
+Test 1: h alone - PASSED
+Test 2: ha - PASSED
+Test 3: hn - PASSED
+Test 4: ho - PASSED
+Test 5: hp - PASSED
+Test 6: hz (invalid) - PASSED
+Test 7: vi(ha) - PASSED
+Test 8: pu(hm) - PASSED
+Test 9: Multiple pitch descriptors - PASSED
+Test 10: Lookbehind pattern - PASSED
+
+All tests passed! (10/10)
+```
+
+### Visual Examples
+
+#### Input
+```gabc
+nabc: vi(ha);
+nabc: pu(hn);
+nabc: ta(h1);
+nabc: to(ho)pu(hp);
+```
+
+#### Syntax Highlighting
+```
+nabc: vi(ha);
+      ^^  ^^
+      ||  |└─ nabcPitchDescriptorPitch (Identifier/Ciano)
+      ||  └── nabcPitchDescriptorH (Special/Amarelo)
+      |└───── nabc_code (Type/Verde)
+      └────── keyword (Keyword/Rosa)
+```
+
+### Related Patterns
+
+- **NABC Code** (Iteration 21): Define os códigos de neuma válidos
+- **NABC Glyph Modifier** (Iteration 23): Define os modificadores de glifo
+- **NABC Volume Descriptor**: Define descritores de volume (a ser implementado)
+
+### Notes
+
+1. **Parser Precedence**: O pitch descriptor deve ser processado antes do `nabc_glyph` para evitar que o `h` seja capturado como código de neuma
+2. **Lookbehind Pattern**: O uso de `\(h\)\@<=` é essencial para separar o `h` da letra de altura no realce
+3. **Extensibility**: A estrutura permite fácil adição de outros descritores no futuro
+4. **Compatibility**: Compatível com todos os outros elementos NABC (códigos, modificadores, etc.)
+
+### Files Modified
+
+- `syntax/gabc.vim`: Adicionados padrões `nabcPitchDescriptorH` e `nabcPitchDescriptorPitch`
+- `tests/test_nabc_pitch_descriptor.sh`: Script de teste criado
+- `examples/nabc_pitch_descriptor.gabc`: Arquivo de exemplo criado
+
+---
+
+**Document Version**: 2.1  
 **Last Updated**: October 16, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim

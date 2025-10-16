@@ -1,0 +1,28 @@
+name: NABC Glyph Descriptors Test;
+%%
+
+% Basic Glyph Descriptors (single neume with optional modifiers and pitch)
+Te(c|vi)
+De(d|pu)
+um(e|viS)
+lau(f|puG)
+da(g|taM)
+mus(h|vi-)
+te(i|pu>)
+be(j|ta~)
+ne(k|viha)
+di(l|puS2hm)
+ci(m|taG3hn)
+
+% Complex Glyph Descriptors (multiple basic descriptors concatenated with !)
+Glo(c|vi!pu)
+ri(d|pu!ta!gr)
+a(e|viS!puG)
+tu(f|vi!pu!ta)
+a(g|viha!puhm)
+Do(h|viS2ha!puG3hm)
+mi(i|vi!pu!ta!gr)
+ne(j|viS!puG!taM)
+
+% Mixed structures
+De(c|vi)o(d|pu!ta)gra(e|viS2ha!puG3hm!taM)ti(f|vi)as(g|pu!ta)
