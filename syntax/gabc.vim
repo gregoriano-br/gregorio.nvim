@@ -85,7 +85,7 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " Note: The /\@ construct is a negative zero-width assertion in Vim regex
 " Matches content inside parentheses (entire musical snippet), excluding the parentheses themselves
 " This allows for highlighting of its contained elements (pitches, modifiers, etc.)
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcModifierEpisema,gabcModifierEpisemaNumber,gabcModifierIctus,gabcModifierIctusNumber,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcAttrChoralSign,gabcAttrChoralNabc,gabcAttrBrace,gabcAttrStemLength,gabcAttrLedgerLines,gabcAttrSlur,gabcAttrEpisemaTune,gabcAttrAboveLinesText,gabcAttrVerbatimNote,gabcAttrVerbatimGlyph,gabcAttrVerbatimElement,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue,gabcBarDouble,gabcBarDotted,gabcBarMaior,gabcBarMinor,gabcBarMinima,gabcBarMinimaOcto,gabcBarVirgula,gabcBarMinorSuffix,gabcBarZeroSuffix,gabcCustos,gabcLineBreak,gabcLineBreakSuffix transparent
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcModifierEpisema,gabcModifierEpisemaNumber,gabcModifierIctus,gabcModifierIctusNumber,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcAttrChoralSign,gabcAttrChoralNabc,gabcAttrBrace,gabcAttrStemLength,gabcAttrLedgerLines,gabcAttrSlur,gabcAttrEpisemaTune,gabcAttrAboveLinesText,gabcAttrVerbatimNote,gabcAttrVerbatimGlyph,gabcAttrVerbatimElement,gabcMacroNote,gabcMacroGlyph,gabcMacroElement,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue,gabcBarDouble,gabcBarDotted,gabcBarMaior,gabcBarMinor,gabcBarMinima,gabcBarMinimaOcto,gabcBarVirgula,gabcBarMinorSuffix,gabcBarZeroSuffix,gabcCustos,gabcLineBreak,gabcLineBreakSuffix transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -324,6 +324,20 @@ syntax region gabcAttrVerbatimNote matchgroup=gabcAttrVerbatimDelim start=/\[nv:
 syntax region gabcAttrVerbatimGlyph matchgroup=gabcAttrVerbatimDelim start=/\[gv:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
 syntax region gabcAttrVerbatimElement matchgroup=gabcAttrVerbatimDelim start=/\[ev:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
 
+" MACROS: Predefined notation shortcuts at different scopes
+" [nm#] - note level macro (# = 0-9)
+" [gm#] - glyph level macro (# = 0-9)
+" [em#] - element level macro (# = 0-9)
+" Macro identifier (nm/gm/em) highlighted as Function
+" Macro number (0-9) highlighted as Number (parameter)
+syntax match gabcMacroNote /\[nm[0-9]\]/ contained containedin=gabcSnippet contains=gabcMacroIdentifier,gabcMacroNumber
+syntax match gabcMacroGlyph /\[gm[0-9]\]/ contained containedin=gabcSnippet contains=gabcMacroIdentifier,gabcMacroNumber
+syntax match gabcMacroElement /\[em[0-9]\]/ contained containedin=gabcSnippet contains=gabcMacroIdentifier,gabcMacroNumber
+
+" Macro components (for fine-grained highlighting)
+syntax match gabcMacroIdentifier /\[\@<=\(nm\|gm\|em\)/ contained
+syntax match gabcMacroNumber /\([nge]m\)\@<=[0-9]/ contained
+
 " ============================================================================
 " GENERIC PITCH ATTRIBUTES: Fallback for unrecognized attribute types
 " Defined AFTER specialized attributes to catch remaining cases
@@ -543,6 +557,10 @@ highlight link gabcAttrAboveLinesText String
 
 " Verbatim TeX: embedded LaTeX code (delimiters only, content uses @texSyntax)
 highlight link gabcAttrVerbatimDelim Special
+
+" Macros: predefined notation shortcuts (identifier as Function, number as Number)
+highlight link gabcMacroIdentifier Function
+highlight link gabcMacroNumber Number
 
 " GABC pitch attributes: Generic [attribute:value] syntax for pitch-level metadata
 " Examples: [shape:stroke], [color:red], [custom:data]
