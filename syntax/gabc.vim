@@ -208,6 +208,12 @@ syntax match gabcBarZeroSuffix /\([,\^`]\)\@<=0/ contained containedin=gabcSnipp
 " _ = bar brace (already defined as gabcModifierEpisema in rhythmic section)
 " These modifiers reuse existing highlight groups when applied to bars
 
+" GABC CUSTOS: End-of-line guide indicating next pitch on following line
+" Syntax: pitch+ (e.g., f+, g+, a+)
+" The custos shows which pitch begins the next line
+" Both pitch and + are highlighted as operators for visual consistency
+syntax match gabcCustos /[a-npA-NP]+/ contained containedin=gabcSnippet
+
 " GABC NEUME FUSIONS: @ connector for fusing notes into single neume
 " Two forms:
 " 1. Individual pitch fusion: f@g@h (connector between pitches)
@@ -407,6 +413,9 @@ highlight link gabcBarMinimaOcto Special
 highlight link gabcBarVirgula Special
 highlight link gabcBarMinorSuffix Number
 highlight link gabcBarZeroSuffix Number
+
+" GABC custos: end-of-line guide showing next pitch
+highlight link gabcCustos Operator
 
 " GABC accidentals: symbols indicating pitch alteration (includes pitch letter for position)
 highlight link gabcAccidental Function
