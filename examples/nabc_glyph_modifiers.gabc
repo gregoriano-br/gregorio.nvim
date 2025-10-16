@@ -1,0 +1,8 @@
+name: NABC Glyph Modifiers Test;
+%%
+SimpleModifiers(e|viS|f|puG|g|taM|a|vi-|b|pu>|c|ta~)
+WithNumbers(e|viS1|f|puG2|g|taM3|a|vi-4|b|pu>5|c|ta~6)
+Compound(e|grS2|f|cl-3|g|peG4|a|poM5|b|to>6|c|ci~7)
+StGall(e|stS|f|stG1|g|st-2)
+Laon(e|ocM|f|ocG3|g|un~4)
+MaxSuffix(e|viS9|f|puG9|g|taM9|a|vi-9|b|pu>9|c|ta~9)

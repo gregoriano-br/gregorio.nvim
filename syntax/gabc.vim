@@ -104,7 +104,7 @@ syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation trans
 " NABC snippet: All subsequent positions (after pipe delimiter)
 " Contains St. Gall and Laon neume codes
 " Note: NOT transparent - contains specific NABC syntax elements
-syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcNeume,nabcGlyphModifier,nabcGlyphModifierNumber
 
 " ============================================================================
 " NABC NEUMES: St. Gall and Laon neume codes
@@ -133,6 +133,29 @@ syntax match nabcNeume /\(vi\|pu\|ta\|gr\|cl\|pe\|po\|to\|ci\|sc\|pf\|sf\|tr\|st
 
 " NABC neume highlight group
 highlight link nabcNeume Keyword
+
+" NABC GLYPH MODIFIERS: Apply to St. Gall and Laon neumes
+" These modifiers follow immediately after the neume code
+" All can optionally take a numeric suffix 1-9
+"
+" S = modification of the mark
+" G = modification of the grouping (neumatic break)
+" M = melodic modification
+" - = addition of episema
+" > = augmentive liquescence
+" ~ = diminutive liquescence
+"
+" Pattern: modifier character (simple match within nabcSnippet)
+" Note: Uses same highlighting as GABC modifiers for consistency
+syntax match nabcGlyphModifier /[SGM\->~]/ contained containedin=nabcSnippet
+
+" NABC glyph modifier numeric suffix: 1-9 immediately after modifier
+" Uses positive lookbehind to match digit only after a glyph modifier
+syntax match nabcGlyphModifierNumber /\([SGM\->~]\)\@<=[1-9]/ contained containedin=nabcSnippet
+
+" NABC highlight groups for modifiers (reuse GABC modifier styling)
+highlight link nabcGlyphModifier SpecialChar
+highlight link nabcGlyphModifierNumber Number
 
 " GABC pitches: a-p (excluding 'o'), both lowercase (punctum quadratum) and uppercase (punctum inclinatum)
 " Lowercase: a b c d e f g h i j k l m n p (punctum quadratum - square note)
