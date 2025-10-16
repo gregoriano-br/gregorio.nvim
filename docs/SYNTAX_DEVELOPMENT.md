@@ -4699,6 +4699,183 @@ This hierarchical structure ensures accurate, context-aware highlighting through
 
 ---
 
+## Bug 2: Desafio da Alternância GABC/NABC
+
+### Declaração do Problema
+
+A notação GABC suporta snippets alternantes de GABC e NABC (neumas de St. Gall) dentro de parênteses de notação musical, separados por delimitadores de pipe:
+
+```gabc
+(gabc1|nabc1|gabc2|nabc2|gabc3)
+```
+
+Comportamento esperado: Posições ímpares são GABC, posições pares são NABC.
+Comportamento real com sintaxe Vim: Primeira posição é GABC, todas as subsequentes são NABC.
+
+### Análise da Causa Raiz
+
+O syntax highlighting do Vim é baseado em regex e **stateless** (sem estado). Para implementar alternância perfeita, o parser precisaria:
+
+1. Contar o número de delimitadores `|` vistos
+2. Determinar paridade (ímpar vs par)
+3. Aplicar highlighting diferente baseado na contagem
+
+Isso requer uma **máquina de estados**, que o motor regex do Vim não pode fornecer.
+
+### Soluções Tentadas
+
+#### Abordagem 1: Regiões com Lookbehinds
+```vim
+syntax region gabcSnippet start=/(\@<=/ end=/\ze[|)]/
+syntax region nabcSnippet start=/|\@<=/ end=/\ze[|)]/
+```
+**Resultado**: Falhou - snippets nunca ativaram porque lookbehind requer caractere literal precedente, mas dentro de uma região o `(` é consumido pelo matchgroup.
+
+#### Abordagem 2: Cadeias Matchgroup + Nextgroup
+```vim
+syntax region gabcSnippet1 ... nextgroup=nabcSnippet1
+syntax region nabcSnippet1 ... nextgroup=gabcSnippet2
+syntax region gabcSnippet2 ... nextgroup=nabcSnippet2
+```
+**Resultado**: Falhou - conflito de região com `gabcNotation` pai, todo o conteúdo matched à última definição de região.
+
+#### Abordagem 3: Padrões Position-Specific Explícitos
+```vim
+syntax match gabcSnippet /(\zs[^|)]\+/
+syntax match nabcSnippet /([^|)]\+|\zs[^|)]\+/
+syntax match gabcSnippet /([^|)]\+|[^|)]\+|\zs[^|)]\+/
+```
+**Resultado**: Falhou - lookbehind não funciona confiavelmente dentro de regiões; padrões muito complexos e frágeis.
+
+#### Abordagem 4: Regiões Numeradas com Ciclo de Estado
+```vim
+syntax region gabcSnippet1 start=/(\@<=/ end=/\ze|/ nextgroup=nabcSnippet1
+syntax region nabcSnippet1 start=/|\@<=/ end=/\ze|/ nextgroup=gabcSnippet2
+```
+**Resultado**: Falhou - todo o conteúdo matched à última região definida (nabcSnippet5).
+
+#### Abordagem 5: Lookbehind de Comprimento Variável
+```vim
+syntax region gabcSnippet1 start=/\%#=1(\@<=/ms=s end=/\ze|/
+```
+**Resultado**: Falhou - limitações do motor regex do Vim com lookbehind dentro de regiões.
+
+### Pesquisa do Compilador Gregorio
+
+Para entender a maneira "correta" de lidar com alternância, analisamos o código-fonte do compilador Gregorio:
+
+#### Lexer (Flex - `gabc-score-determination.l`)
+```c
+<score>\( {
+    BEGIN(notes);
+    return OPENING_BRACKET;
+}
+<notes>(\$.|[^|\)])+ {
+    return NOTES;  // Token genérico, sem lógica de alternância
+}
+<notes>\| {
+    return NABC_CUT;  // Token delimitador
+}
+<notes>\) {
+    BEGIN(score);
+    return CLOSING_BRACKET;
+}
+```
+
+**Insight chave**: Lexer apenas tokeniza, não lida com alternância.
+
+#### Parser (Yacc/Bison - `gabc-score-determination.y`)
+```c
+unsigned char nabc_state = 0;
+size_t nabc_lines = 0;
+
+static void gabc_y_add_notes(char *notes, YYLTYPE loc) {
+    if (nabc_state == 0) {
+        // Processar como GABC
+        elements[voice] = gabc_det_elements_from_string(notes, ...);
+    } else {
+        // Processar como NABC
+        current_element->nabc[nabc_state-1] = gregorio_strdup(notes);
+    }
+}
+
+note:
+    NOTES CLOSING_BRACKET {
+        gabc_y_add_notes($1.text, @1);
+        nabc_state = 0;  // Resetar estado
+    }
+    | NOTES NABC_CUT {
+        gabc_y_add_notes($1.text, @1);
+        nabc_state = (nabc_state + 1) % (nabc_lines+1);  // Incrementar estado
+    }
+```
+
+**Insight chave**: Alternância tratada por **máquina de estados no parser**, não no lexer.
+
+O parser:
+1. Mantém variável `nabc_state` (0 = GABC, 1-N = linhas NABC)
+2. Incrementa estado a cada token `NABC_CUT` (`|`)
+3. Usa estado para determinar como processar o mesmo token `NOTES`
+4. Cicla pelos estados: `(nabc_state + 1) % (nabc_lines+1)`
+
+### Implementação Atual
+
+Dadas as limitações da sintaxe Vim, implementamos a melhor solução possível:
+
+```vim
+" Região container
+syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ 
+    keepend oneline containedin=gabcNotes
+
+" Primeiro snippet (GABC) - após paren de abertura
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation transparent
+
+" Snippets subsequentes (NABC) - após delimitadores pipe
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation transparent
+```
+
+**Comportamento**:
+- ✅ Primeiro snippet corretamente identificado como `gabcSnippet`
+- ✅ Snippets subsequentes corretamente identificados como `nabcSnippet`
+- ✗ Alternância perfeita não é possível
+
+**Workaround**: Ambos usam `transparent` para permitir que elementos GABC contidos destaquem corretamente mesmo em contexto NABC. Isso fornece feedback visual razoável sem precisão perfeita.
+
+### Teste
+
+Suite de testes valida comportamento atual:
+
+```bash
+tests/test_alternation_simple.sh
+```
+
+Resultados para padrão `(e|nabc|fgFE|nabc2|h)`:
+- Posição 2 ('e'): ✓ gabcSnippet (correto)
+- Posição 4 ('nabc'): ✓ nabcSnippet (correto)
+- Posição 9 ('fgFE'): ⚠ nabcSnippet (deveria ser gabcSnippet - limitação conhecida)
+
+### Solução Futura: Tree-sitter
+
+Alternância perfeita requer um **parser com estado**, que Tree-sitter fornece.
+
+Vantagens do Tree-sitter:
+- Mantém estado de parsing entre tokens
+- Pode implementar lógica de máquina de estados
+- Fornece AST precisa para padrões complexos
+- Melhor performance para arquivos grandes
+
+Veja seção **Roadmap Tree-sitter** para plano de implementação.
+
+### Conclusão
+
+**Limitação Conhecida**: Alternância GABC/NABC perfeita é impossível com syntax highlighting baseado em regex do Vim. A implementação atual fornece identificação de estrutura básica (primeiro=GABC, resto=NABC) que é aceitável para a maioria dos casos de uso.
+
+**Problema Fundamental**: Sintaxe Vim é projetada para correspondência de padrões stateless, enquanto alternância requer parsing stateful (contando delimitadores). Isso não é uma falha em nossa implementação, mas uma limitação do próprio motor de highlighting.
+
+**Caminho a Seguir**: Implementação de parser Tree-sitter (veja roadmap).
+
+---
+
 ## Additional Resources
 
 ### GABC Specification
@@ -4715,8 +4892,13 @@ This hierarchical structure ensures accurate, context-aware highlighting through
 - [Vim Test Framework](https://github.com/junegunn/vader.vim)
 - [VS Code Extension Testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension)
 
+### Gregorio Compiler Source Code
+- [Gregorio GitHub Repository](https://github.com/gregorio-project/gregorio)
+- [GABC Lexer (Flex)](https://github.com/gregorio-project/gregorio/blob/develop/src/gabc/gabc-score-determination.l)
+- [GABC Parser (Yacc/Bison)](https://github.com/gregorio-project/gregorio/blob/develop/src/gabc/gabc-score-determination.y)
+
 ---
 
-**Document Version**: 1.7  
-**Last Updated**: October 16, 2025  
+**Document Version**: 1.8  
+**Last Updated**: December 2024  
 **Maintained by**: AISCGre-BR/gregorio.nvim
