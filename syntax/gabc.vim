@@ -82,7 +82,10 @@ syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepen
 " GABC snippet: First snippet after ( up to | or )
 " This is a container for future GABC-specific notation elements  
 " Use a simpler pattern: match everything that's not | or )
-syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor transparent
+" Note: The /\@ construct is a negative zero-width assertion in Vim regex
+" Matches content inside parentheses (entire musical snippet), excluding the parentheses themselves
+" This allows for highlighting of its contained elements (pitches, modifiers, etc.)
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation contains=gabcAccidental,gabcInitioDebilis,gabcPitch,gabcPitchSuffix,gabcOriscus,gabcOriscusSuffix,gabcModifierCompound,gabcModifierSimple,gabcModifierSpecial,gabcFusionCollective,gabcFusionConnector,gabcSpacingDouble,gabcSpacingSingle,gabcSpacingHalf,gabcSpacingSmall,gabcSpacingZero,gabcSpacingBracket,gabcSpacingFactor,gabcPitchAttrBracket,gabcPitchAttrName,gabcPitchAttrColon,gabcPitchAttrValue transparent
 
 " Snippet delimiter: | separates GABC and NABC snippets
 " Must be defined after gabcSnippet to not interfere with it
@@ -184,13 +187,58 @@ syntax match gabcSpacingDouble /\/\// contained containedin=gabcSnippet    " // 
 
 " Spacing suffix: [...] after / for scaled spacing
 " Brackets act as delimiters, number inside is the scaling factor
-syntax match gabcSpacingBracket /\[/ contained containedin=gabcSnippet     " [ delimiter for spacing factor
+" Use lookbehind to match [ only after / (to avoid conflict with shape hints)
+syntax match gabcSpacingBracket /\(\/\)\@<=\[/ contained containedin=gabcSnippet     " [ delimiter for spacing factor (after /)
 syntax match gabcSpacingBracket /\]/ contained containedin=gabcSnippet     " ] delimiter for spacing factor
 syntax match gabcSpacingFactor /\(\[\)\@<=-\?\d\+\(\.\d\+\)\?/ contained containedin=gabcSnippet  " numeric factor AFTER [ (positive lookbehind)
 
 " Zero-width space: ! (when alone or followed by space for non-breaking)
 " Must come AFTER /! to not interfere
 syntax match gabcSpacingZero /!/ contained containedin=gabcSnippet
+
+" GABC PITCH ATTRIBUTES: Generic [attribute:value] syntax
+" This is a general mechanism for pitch-level metadata annotations
+" Syntax: [attr:value] immediately after a pitch
+" Examples: [shape:stroke], [shape:virga], [color:red], etc.
+"
+" Components:
+" - Brackets: [ and ] (Delimiter)
+" - Attribute name: any word before the colon (e.g., "shape", "color")
+" - Colon: : (separator between attribute name and value)
+" - Value: any non-bracket characters after the colon
+"   Note: Paren matching is disabled in values (e.g., "1{" won't trigger missing "}" error)
+"
+" Implementation strategy:
+" - Use lookahead/lookbehind to avoid conflicts with spacing brackets /[...]
+" - Attribute brackets: [ must be followed by word:\w+:
+" - Closing bracket: ] must be preceded by non-bracket content
+
+" Pitch attribute brackets (delimiters)
+" Opening bracket: [ followed by any attribute name and colon (e.g., [shape:, [color:)
+" Use lookahead to match [ only when followed by "word characters + colon" pattern
+syntax match gabcPitchAttrBracket /\[\(\w\+:\)\@=/ contained containedin=gabcSnippet
+
+" Closing bracket: ] preceded by any non-whitespace (end of attribute value)
+" Use lookbehind to match ] only when preceded by value content
+syntax match gabcPitchAttrBracket /\(\S\)\@<=\]/ contained containedin=gabcSnippet
+
+" Pitch attribute name: any word characters between [ and :
+" Matches attribute name (e.g., "shape", "color", "custom")
+" Pattern: word chars after [ and before :
+syntax match gabcPitchAttrName /\(\[\)\@<=\w\+\(:\)\@=/ contained containedin=gabcSnippet
+
+" Pitch attribute colon: ":" separator
+" Matches : when preceded by [attribute_name
+syntax match gabcPitchAttrColon /\(\[\w\+\)\@<=:/ contained containedin=gabcSnippet
+
+" Pitch attribute value: content after ":" up to closing bracket
+" Matches any non-bracket characters after attribute:
+" Pattern: content after [attr: and before ]
+" Uses region to disable paren matching within the value (via 'contained' and specific pattern)
+syntax region gabcPitchAttrValue start=/\(\[\w\+:\)\@<=/ end=/\(\]\)\@=/ contained containedin=gabcSnippet oneline
+
+" Note: The 'oneline' option ensures the region doesn't span multiple lines
+" The region implicitly disables Vim's built-in paren matching for its contents
 
 " Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
 syntax match gabcSyllable /[^()<>]\+/ containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
@@ -310,6 +358,13 @@ highlight link gabcSpacingSmall Operator
 highlight link gabcSpacingZero Operator
 highlight link gabcSpacingBracket Delimiter
 highlight link gabcSpacingFactor Number
+
+" GABC pitch attributes: Generic [attribute:value] syntax for pitch-level metadata
+" Examples: [shape:stroke], [color:red], [custom:data]
+highlight link gabcPitchAttrBracket Delimiter
+highlight link gabcPitchAttrName PreProc
+highlight link gabcPitchAttrColon Special
+highlight link gabcPitchAttrValue String
 
 " GABC and NABC snippet containers (transparent - no direct highlighting)
 " These will contain future specific notation syntax
