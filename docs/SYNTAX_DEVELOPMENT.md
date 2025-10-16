@@ -12,6 +12,19 @@
 1. [Overview](#overview)
 2. [Development Philosophy](#development-philosophy)
 3. [Iteration History](#iteration-history)
+   - [Iteration 0: Project Structure Setup](#iteration-0-project-structure-setup-pre-existing)
+   - [Iteration 1: Comments and File Structure](#iteration-1-comments-and-file-structure)
+   - [Iteration 2: Header Field Parsing](#iteration-2-header-field-parsing)
+   - [Iteration 3: Clef Notation](#iteration-3-clef-notation)
+   - [Iteration 4: Lyric Centering and Translation](#iteration-4-lyric-centering-and-translation)
+   - [Iteration 5: GABC Markup Tags](#iteration-5-gabc-markup-tags)
+   - [Iteration 6: GABC/NABC Snippet Containers](#iteration-6-gabcnabc-snippet-containers)
+   - [Iteration 7: GABC Pitch Letters](#iteration-7-gabc-pitch-letters)
+   - [Iteration 8: Pitch Inclinatum Suffixes](#iteration-8-pitch-inclinatum-suffixes)
+   - [Iteration 9: Pitch Modifiers](#iteration-9-pitch-modifiers)
+   - [Iteration 10: Accidentals (Initial)](#iteration-10-accidentals-initial-implementation)
+   - [Iteration 11: Accidentals (Corrected)](#iteration-11-accidentals-corrected)
+   - [Iteration 12: Highlight Group Refinement](#iteration-12-highlight-group-refinement)
 4. [Syntax Highlighting Reference Table](#syntax-highlighting-reference-table)
 5. [Technical Patterns and Best Practices](#technical-patterns-and-best-practices)
 6. [Testing Strategy](#testing-strategy)
@@ -29,6 +42,33 @@ This document chronicles the complete development process of a syntax highlighti
 4. Committed atomically with semantic messages
 
 The goal is to provide a reference for developers (human or AI) building similar syntax highlighting systems for other platforms like VS Code, Emacs, Sublime Text, etc.
+
+### Development Journey
+
+The syntax highlighting system was built through **13 iterations** starting from the absolute basics:
+
+**Foundation** (Iterations 0-2):
+- File structure and comments
+- Header/body separation with `%%` delimiter  
+- Header field parsing (key:value; format)
+
+**Structure Elements** (Iterations 3-5):
+- Clef notation `(c4)`, `(f3)`, etc.
+- Lyric centering `{text}` and translation `[text]`
+- XML-like markup tags `<b>`, `<i>`, `<v>` with LaTeX embedding
+
+**Musical Notation** (Iterations 6-9):
+- GABC/NABC snippet containers and delimiters
+- Pitch letters (a-p, A-P) excluding o/O
+- Pitch inclinatum suffixes (0, 1, 2)
+- Comprehensive modifiers (30+ symbols)
+
+**Refinement** (Iterations 10-12):
+- Accidentals (initial incorrect implementation)
+- Accidentals (corrected with pitch BEFORE symbol)
+- Highlight group optimization for visual contrast
+
+Each iteration is documented with problem analysis, implementation details, testing strategy, challenges encountered, and solutions discovered.
 
 ---
 
@@ -70,7 +110,508 @@ The goal is to provide a reference for developers (human or AI) building similar
 
 ---
 
-### Iteration 1: GABC/NABC Snippet Containers
+### Iteration 1: Comments and File Structure
+
+**Goal**: Implement the most fundamental GABC syntax elements: comments and file structure
+
+**Commit**: `bb1c804` - "syntax(gabc): bootstrap comments and header/notes sections with %% separator"
+
+#### Problem Analysis
+
+GABC files have a specific structure:
+```gabc
+name: Example;
+% This is a comment
+%%
+(notes here)
+```
+
+**Key Requirements**:
+1. **Comments**: Lines starting with `%`
+2. **Section Separator**: Exactly `%%` on its own line separates header from body
+3. **Header Region**: From beginning of file to `%%`
+4. **Notes/Body Region**: From `%%` to end of file
+
+**Challenge**: The separator `%%` is both a comment marker AND a structural delimiter!
+
+#### Implementation
+
+**Pattern Order Strategy**:
+Must define section separator BEFORE comment patterns to prevent `%%` from being captured as a comment.
+
+**Pattern 1: Section Separator (defined FIRST)**
+```vim
+syntax match gabcSectionSeparator /^%%$/ nextgroup=gabcNotes skipnl skipwhite
+```
+- `^%%$`: Exactly `%%` with nothing else on the line
+- Must be defined before comment patterns
+
+**Pattern 2: Comment Patterns (defined AFTER separator)**
+```vim
+" Line comments at beginning of line
+syntax match gabcComment /^%%.\+/ containedin=gabcHeaders,gabcNotes
+syntax match gabcComment /^%[^%].*/ containedin=gabcHeaders,gabcNotes
+syntax match gabcComment /^%$/ containedin=gabcHeaders,gabcNotes
+
+" Inline comments (after non-% character)
+syntax match gabcComment /\([^%]\)\@<=%.*/ contains=@NoSpell 
+  \ containedin=gabcHeaders,gabcNotes
+```
+
+**Why This Order?**
+- `^%%$` matches only the separator (no following characters)
+- `^%%.\+` matches `%%` with at least one more character (comment)
+- `^%[^%].*` matches `%` followed by non-`%` (comment)
+- `^%$` matches single `%` alone (comment)
+
+**Pattern 3: Region Definitions**
+```vim
+" Header region: from line 1 to just before %%
+syntax region gabcHeaders start=/\%1l/ end=/^%%$/me=s-1 keepend
+
+" Notes region: from current position to end of file
+syntax region gabcNotes start=/^/ end=/\%$/ keepend contained
+```
+
+**Regex Breakdown**:
+- `\%1l`: Start at line 1 (beginning of file)
+- `/^%%$/me=s-1`: End match at `%%` line, but exclude it (`me=s-1` = match end at start minus 1)
+- `\%$`: End of file
+
+#### Testing
+
+**Manual Testing Approach**:
+1. Create test GABC file with comments in various positions
+2. Open in Neovim
+3. Verify comment highlighting
+4. Verify `%%` separator highlighted differently
+5. Verify regions correctly delimit header vs body
+
+**Test Cases**:
+```gabc
+% Comment at start
+name: Test;
+%% Comment that looks like separator
+%%
+% Comment in body
+(notes)
+```
+
+**Expected Behavior**:
+- Line 1: Comment
+- Line 2: Header field
+- Line 3: Comment (not separator)
+- Line 4: Section separator
+- Line 5: Comment
+- Line 6: Notes
+
+#### Challenges
+
+**Problem 1**: `%%` being captured as comment instead of separator
+
+**Solution**: Define separator pattern BEFORE comment patterns
+
+**Problem 2**: Header region including the `%%` line
+
+**Solution**: Use `me=s-1` (match end at start minus 1) to exclude separator from region
+
+**Problem 3**: `gabcNotes` region not starting at correct position
+
+**Solution**: Use `nextgroup=gabcNotes` in separator pattern to trigger notes region
+
+#### Highlight Groups
+
+| Element | Syntax Group | Highlight Link | Visual Appearance |
+|---------|--------------|----------------|-------------------|
+| `%` comments | gabcComment | Comment | Comment color (gray) |
+| `%%` separator | gabcSectionSeparator | Special | Special color (distinct) |
+| Header region | gabcHeaders | (transparent) | No direct color |
+| Notes region | gabcNotes | (transparent) | No direct color |
+
+---
+
+### Iteration 2: Header Field Parsing
+
+**Goal**: Parse header fields with their key-value structure
+
+**Commit**: `4a14177` - "Add separate syntax highlighting for header delimiters"
+
+#### Problem Analysis
+
+GABC headers have a specific format:
+```gabc
+field_name: field value;
+annotation: IV;
+mode: 4;
+```
+
+**Structure**:
+- **Field name**: Text before `:`
+- **Colon**: `:` delimiter
+- **Field value**: Text between `:` and `;`
+- **Semicolon**: `;` terminator
+
+#### Implementation
+
+**Pattern Strategy**: Use `nextgroup` to chain patterns together
+
+**Pattern 1: Header Field**
+```vim
+syntax match gabcHeaderField /^\s*[^%:][^:]*\ze:/ 
+  \ containedin=gabcHeaders nextgroup=gabcHeaderColon
+```
+- `^\s*`: Optional leading whitespace
+- `[^%:]`: First character must not be `%` or `:` (avoid comments/empty fields)
+- `[^:]*`: Any characters except `:`
+- `\ze:`: Zero-width assertion before `:` (don't capture the colon)
+- `nextgroup=gabcHeaderColon`: Next pattern to match
+
+**Pattern 2: Header Colon**
+```vim
+syntax match gabcHeaderColon /:/ contained containedin=gabcHeaders 
+  \ nextgroup=gabcHeaderValue skipwhite
+```
+- `contained`: Only match within parent context
+- `skipwhite`: Skip whitespace before next group
+
+**Pattern 3: Header Value**
+```vim
+syntax match gabcHeaderValue /\%(:\s*\)\@<=[^;]*/ 
+  \ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon
+```
+- `\%(:\s*\)\@<=`: Positive lookbehind for `:` and optional whitespace
+- `[^;]*`: Any characters except `;`
+
+**Pattern 4: Header Semicolon**
+```vim
+syntax match gabcHeaderSemicolon /;/ contained containedin=gabcHeaders
+```
+
+#### Testing
+
+**Test File**:
+```gabc
+name: Kyrie;
+annotation: IV;
+mode: 4;
+initial-style: 1;
+%%
+(notes)
+```
+
+**Verification**:
+- Field names highlighted as Keyword
+- Colons highlighted as Operator
+- Values highlighted as String
+- Semicolons highlighted as Delimiter
+
+#### Highlight Groups
+
+| Element | Syntax Group | Highlight Link | Visual Appearance |
+|---------|--------------|----------------|-------------------|
+| Field name | gabcHeaderField | Keyword | Keyword color |
+| `:` | gabcHeaderColon | Operator | Operator color |
+| Field value | gabcHeaderValue | String | String color |
+| `;` | gabcHeaderSemicolon | Delimiter | Delimiter color |
+
+**Note**: Using `default` links to respect user colorschemes:
+```vim
+highlight default link gabcHeaderField Keyword
+```
+
+---
+
+### Iteration 3: Clef Notation
+
+**Goal**: Implement syntax highlighting for clef specifications in the notes region
+
+**Commit**: `1d961a7` - "syntax(gabc): restrict clef match to (c|cb|f)[1-4]"
+
+#### Problem Analysis
+
+GABC uses clefs to indicate pitch reference:
+```gabc
+(c4) (f3) (cb4) (c3@cb4)
+```
+
+**Clef Format**:
+- Letter: `c`, `cb`, or `f`
+- Number: `1`, `2`, `3`, or `4`
+- Optional connector: `@` for clef changes
+- Wrapped in parentheses
+
+**Challenge**: Distinguish clefs from other note patterns like `(cde)` or `(fgh)`
+
+#### Implementation
+
+**Pattern 1: Clef Container**
+```vim
+syntax match gabcClef /(\%(cb\|[cf]\)[1-4]\%(@\%(cb\|[cf]\)[1-4]\)*)/ 
+  \ containedin=gabcNotes 
+  \ contains=gabcClefLetter,gabcClefNumber,gabcClefConnector
+```
+
+**Regex Breakdown**:
+- `(`: Literal opening parenthesis
+- `\%(cb\|[cf]\)`: Non-capturing group for `cb`, `c`, or `f`
+- `[1-4]`: Digit 1-4
+- `\%(...\)*`: Zero or more clef changes with `@` connector
+- `)`: Literal closing parenthesis
+
+**Why This Works**:
+- Requires specific pattern: letter + digit
+- Excludes random note patterns
+- Allows clef changes: `(c4@f3)`
+
+**Pattern 2: Clef Components**
+```vim
+syntax match gabcClefLetter /\(cb\|[cf]\)/ 
+  \ contained containedin=gabcClef
+
+syntax match gabcClefNumber /[1-4]/ 
+  \ contained containedin=gabcClef
+
+syntax match gabcClefConnector /@/ 
+  \ contained containedin=gabcClef
+```
+
+#### Testing
+
+**Test Cases**:
+```gabc
+(c4) Valid clef
+(cb2) Valid clef with b
+(f3) Valid f clef
+(c4@f3) Valid clef change
+(cde) NOT a clef (should be notes)
+(c5) NOT valid (5 not in range)
+```
+
+**Verification Method**:
+Use `:echo synIDattr(synID(line('.'), col('.'), 1), 'name')` to check syntax group at cursor
+
+#### Highlight Groups
+
+| Element | Syntax Group | Highlight Link | Visual Appearance |
+|---------|--------------|----------------|-------------------|
+| `c`, `cb`, `f` | gabcClefLetter | Keyword | Keyword color |
+| `1-4` | gabcClefNumber | Number | Number color |
+| `@` | gabcClefConnector | Operator | Operator color |
+
+---
+
+### Iteration 4: Lyric Centering and Translation
+
+**Goal**: Implement delimiters for lyric centering and translation text
+
+**Commit**: `9130480` - "feat(syntax): add support for {} lyric centering and [] translation delimiters"
+
+#### Problem Analysis
+
+GABC supports special text formatting:
+
+**Lyric Centering** (`{}`):
+```gabc
+a{lle}lu(g)ia
+```
+Centers "lle" under the note
+
+**Translation** (`[]`):
+```gabc
+Ky[Lord]ri(g)e
+```
+Displays "Lord" as translation/gloss
+
+#### Implementation
+
+**Pattern 1: Lyric Centering**
+```vim
+syntax region gabcLyricCentering 
+  \ matchgroup=gabcLyricCenteringDelim 
+  \ start=/{/ end=/}/ 
+  \ keepend oneline 
+  \ containedin=gabcNotes
+```
+
+**Pattern 2: Translation**
+```vim
+syntax region gabcTranslation 
+  \ matchgroup=gabcTranslationDelim 
+  \ start=/\[/ end=/\]/ 
+  \ keepend oneline 
+  \ containedin=gabcNotes
+```
+
+**Why `matchgroup`?**
+- Allows delimiters to have different highlight than content
+- `matchgroup=X`: Delimiters get group `X`
+- Content inside gets group from `syntax region` name
+
+**Why `keepend`?**
+- Prevents pattern from extending beyond closing delimiter
+- Important for `}` and `]` which could appear in other contexts
+
+**Why `oneline`?**
+- These constructs should not span multiple lines
+- Prevents runaway matching if closing delimiter missing
+
+#### Testing
+
+**Test File**:
+```gabc
+name: Test;
+%%
+a{lle}lu(g)ia
+Ky[Lord]ri(e)e
+san{c}tus[holy]
+```
+
+**Expected Behavior**:
+- `{` and `}`: Highlighted as delimiters
+- `lle`: Normal text inside centering
+- `[` and `]`: Highlighted as delimiters  
+- `Lord`: Highlighted as string inside translation
+
+#### Highlight Groups
+
+| Element | Syntax Group | Highlight Link | Visual Appearance |
+|---------|--------------|----------------|-------------------|
+| `{` `}` | gabcLyricCenteringDelim | Delimiter | Delimiter color |
+| Centered text | gabcLyricCentering | Special | Special color |
+| `[` `]` | gabcTranslationDelim | Delimiter | Delimiter color |
+| Translation text | gabcTranslation | String | String color |
+
+---
+
+### Iteration 5: GABC Markup Tags
+
+**Goal**: Implement XML-like markup tags for text formatting
+
+**Commit**: `c910866` - "feat(syntax): implement complete GABC markup tag support"
+
+#### Problem Analysis
+
+GABC supports various markup tags:
+```gabc
+<b>bold</b>
+<i>italic</i>
+<sc>small caps</sc>
+<c>colored</c>
+<ul>underline</ul>
+<tt>teletype</tt>
+<v>LaTeX verbatim</v>
+<sp>special</sp>
+<alt>alternative</alt>
+<e>elision</e>
+<nlba>no line break</nlba>
+```
+
+**Requirements**:
+- Match opening and closing tags
+- Highlight tag delimiters separately from content
+- Apply appropriate highlighting to tag content
+
+#### Implementation
+
+**Pattern Strategy**: Use `syntax region` with `matchgroup` for each tag type
+
+**Example: Bold Tag**
+```vim
+syntax region gabcBoldTag 
+  \ start=+<b>+ end=+</b>+ 
+  \ keepend transparent 
+  \ containedin=gabcNotes 
+  \ contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcBoldText
+```
+
+**Tag Components**:
+```vim
+" Tag delimiters
+syntax match gabcTagBracket /[<>]/ contained
+syntax match gabcTagSlash /\// contained  
+syntax match gabcTagName /[a-z]\+/ contained
+
+" Tag content (specific to each tag type)
+syntax match gabcBoldText /\(>\)\@<=[^<]\+\(<\)\@=/ 
+  \ contained containedin=gabcBoldTag
+```
+
+**Content Pattern Breakdown**:
+- `\(>\)\@<=`: Positive lookbehind for `>`
+- `[^<]\+`: One or more non-`<` characters
+- `\(<\)\@=`: Positive lookahead for `<`
+
+**Why This Pattern?**
+- Captures only content between tags
+- Excludes tag delimiters from content match
+- Works for nested structures
+
+#### Special Case: LaTeX Verbatim Tags
+
+**Problem**: `<v>` tags contain LaTeX code that needs LaTeX syntax highlighting
+
+**Solution**: Embed LaTeX syntax
+```vim
+" Load LaTeX syntax
+syntax include @texSyntax $VIMRUNTIME/syntax/tex.vim
+
+" Verbatim tag with LaTeX syntax
+syntax region gabcVerbatimTag 
+  \ start=+<v>+ end=+</v>+ 
+  \ keepend 
+  \ containedin=gabcNotes 
+  \ contains=@texSyntax
+```
+
+**Loading Strategy**:
+```vim
+" Save current syntax state
+let s:current_syntax_save = b:current_syntax
+unlet! b:current_syntax
+
+" Load tex syntax
+try
+  syntax include @texSyntax $VIMRUNTIME/syntax/tex.vim
+catch
+  syntax cluster texSyntax
+endtry
+
+" Don't restore yet (do it at end of file)
+```
+
+#### Testing
+
+**Test File**:
+```gabc
+name: Markup Test;
+%%
+<b>bold text</b>
+<i>italic</i> normal <sc>small caps</sc>
+<v>\textit{latex}</v>
+<e>elisio</e>n
+```
+
+**Verification**:
+- Tag brackets highlighted as delimiters
+- Tag names highlighted appropriately
+- Content highlighted according to tag type
+- LaTeX code has LaTeX syntax highlighting
+
+#### Highlight Groups
+
+| Element | Syntax Group | Highlight Link | Visual Appearance |
+|---------|--------------|----------------|-------------------|
+| `<` `>` | gabcTagBracket | Delimiter | Delimiter color |
+| `/` | gabcTagSlash | Delimiter | Delimiter color |
+| Tag name | gabcTagName | Type | Type color |
+| Bold content | gabcBoldText | Bold | Bold style |
+| Italic content | gabcItalicText | Italic | Italic style |
+| SC content | gabcSmallCapsText | Type | Type color |
+| LaTeX content | (from @texSyntax) | Various | LaTeX colors |
+
+---
+
+### Iteration 6: GABC/NABC Snippet Containers
 
 **Goal**: Implement containers for GABC and NABC notation snippets within parentheses
 
@@ -142,7 +683,7 @@ syntax match nabcSnippet /|\@<=[^|)]\+/
 
 ---
 
-### Iteration 2: GABC Pitch Letters
+### Iteration 7: GABC Pitch Letters
 
 **Goal**: Implement syntax highlighting for musical pitch letters
 
@@ -217,7 +758,7 @@ syntax match gabcPitch /[a-npA-NP]/
 
 ---
 
-### Iteration 3: Pitch Inclinatum Suffixes
+### Iteration 8: Pitch Inclinatum Suffixes
 
 **Goal**: Implement direction indicators for inclined notes
 
@@ -295,7 +836,7 @@ syntax match gabcSnippet /(\@<=[^|)]\+/
 
 ---
 
-### Iteration 4: Pitch Modifiers
+### Iteration 9: Pitch Modifiers
 
 **Goal**: Implement comprehensive pitch modifier symbols
 
@@ -434,7 +975,7 @@ syntax match gabcModifierCompound /sss/ ...
 
 ---
 
-### Iteration 5: Accidentals (Initial Implementation)
+### Iteration 10: Accidentals (Initial Implementation)
 
 **Goal**: Implement musical accidentals (flats, sharps, naturals)
 
@@ -484,7 +1025,7 @@ Tests passed, but implementation was wrong!
 
 ---
 
-### Iteration 6: Accidentals (Corrected)
+### Iteration 11: Accidentals (Corrected)
 
 **Goal**: Fix accidental pattern to match GABC specification
 
@@ -578,7 +1119,7 @@ Pos 5:   v  = gabcModifierSimple
 
 ---
 
-### Iteration 7: Highlight Group Refinement
+### Iteration 12: Highlight Group Refinement
 
 **Goal**: Optimize visual contrast between syntax elements
 
@@ -629,7 +1170,35 @@ if highlight ==# 'Constant'  " Character → Constant translation
 
 | GABC Element | Example | Syntax Group | Highlight Link | Default Color | Semantic Purpose |
 |--------------|---------|--------------|----------------|---------------|------------------|
-| **Structure** |
+| **File Structure** |
+| Comment | `% comment` | `gabcComment` | `Comment` | Comment | Comments (any line starting with %) |
+| Inline comment | `text % comment` | `gabcComment` | `Comment` | Comment | Comments after content |
+| Section separator | `%%` | `gabcSectionSeparator` | `Special` | Special | Separates header from notes |
+| Header region | (whole section) | `gabcHeaders` | (transparent) | - | Container for header fields |
+| Notes region | (whole section) | `gabcNotes` | (transparent) | - | Container for musical notation |
+| **Header Fields** |
+| Field name | `name:` | `gabcHeaderField` | `Keyword` | Keyword | Header field name |
+| Colon | `:` | `gabcHeaderColon` | `Operator` | Operator | Separator between name and value |
+| Field value | `Example` | `gabcHeaderValue` | `String` | String | Header field value |
+| Semicolon | `;` | `gabcHeaderSemicolon` | `Delimiter` | Delimiter | Field terminator |
+| **Clefs** |
+| Clef letter | `c` `cb` `f` | `gabcClefLetter` | `Keyword` | Keyword | Clef type indicator |
+| Clef number | `1` `2` `3` `4` | `gabcClefNumber` | `Number` | Number | Staff line number |
+| Clef connector | `@` | `gabcClefConnector` | `Operator` | Operator | Clef change connector |
+| **Text Formatting** |
+| Lyric centering delim | `{` `}` | `gabcLyricCenteringDelim` | `Delimiter` | Delimiter | Lyric centering boundaries |
+| Centered text | `{text}` | `gabcLyricCentering` | `Special` | Special | Centered lyric text |
+| Translation delim | `[` `]` | `gabcTranslationDelim` | `Delimiter` | Delimiter | Translation boundaries |
+| Translation text | `[text]` | `gabcTranslation` | `String` | String | Alternative translation |
+| **Markup Tags** |
+| Tag bracket | `<` `>` | `gabcTagBracket` | `Delimiter` | Delimiter | Tag delimiters |
+| Tag slash | `/` | `gabcTagSlash` | `Delimiter` | Delimiter | Closing tag indicator |
+| Tag name | `b` `i` `sc` | `gabcTagName` | `Type` | Type | Tag type identifier |
+| Bold text | `<b>text</b>` | `gabcBoldText` | `Bold` | Bold | Bold formatted text |
+| Italic text | `<i>text</i>` | `gabcItalicText` | `Italic` | Italic | Italic formatted text |
+| Small caps text | `<sc>text</sc>` | `gabcSmallCapsText` | `Type` | Type | Small capitals text |
+| LaTeX verbatim | `<v>\LaTeX</v>` | (from @texSyntax) | Various | Various | Embedded LaTeX code |
+| **Musical Notation** |
 | Notation delimiters | `(` `)` | `gabcNotationDelim` | `Delimiter` | Delimiter | Mark notation boundaries |
 | Snippet delimiter | `\|` | `gabcSnippetDelim` | `Operator` | Operator | Separate GABC/NABC |
 | GABC snippet container | `(gabc\|` | `gabcSnippet` | (transparent) | - | Container for GABC elements |
