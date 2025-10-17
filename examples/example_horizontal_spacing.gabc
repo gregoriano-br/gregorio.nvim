@@ -1,0 +1,19 @@
+name: NABC Horizontal Spacing Examples;
+annotation: Horizontal Spacing;
+mode: 1;
+%%
+
+% Basic horizontal spacing examples
+Kyrie (f|//vi) e-(g|/pu)le-(h|``ta)i-(g|`gr)son.
+
+% Multiple spacing accumulation
+Gloria (c|/////pe) in (d|`````sc) ex-(e|//ta)cel-(f|``vi)sis.
+
+% Mixed spacing with other NABC elements
+Sanctus (a|//viS2ha) et (b|/puG1) be-(c|``taM3hb)ne-(d|`grha)dictus.
+
+% Complex combinations
+Agnus (f|///su1pp2) Dei (g|``lsa3) qui (h|`ltcon5) tollis (a|//viS!pu)pec-(b|/ta)ca-(c|``gr)ta (d|`vi)mundi.
+
+% Maximum spacing examples  
+Dona (e|/////////vi) nobis (f|`````````pu) pacem (g|//``//``ta).

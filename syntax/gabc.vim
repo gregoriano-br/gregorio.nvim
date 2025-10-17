@@ -104,7 +104,7 @@ syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation trans
 " NABC snippet: All subsequent positions (after pipe delimiter)
 " Contains St. Gall and Laon neume codes
 " Note: NOT transparent - contains specific NABC syntax elements
-syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter,nabcSubPrepunctisDescriptor,nabcSignificantLetter,nabcTironianLetter
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter,nabcSubPrepunctisDescriptor,nabcSignificantLetter,nabcTironianLetter,nabcHorizontalSpacing
 
 " ============================================================================
 " NABC GLYPH DESCRIPTORS: Structured grouping of neume elements
@@ -331,6 +331,35 @@ highlight link nabcSignificantNumber Number
 highlight link nabcTironianBase Function
 highlight link nabcTironianShorthand Identifier
 highlight link nabcTironianNumber Number
+
+" ============================================================================
+" NABC HORIZONTAL SPACING ADJUSTMENT DESCRIPTOR: Manual positioning control
+" ============================================================================
+
+" HORIZONTAL SPACING ADJUSTMENT: Controls positioning before neume groups
+" Appears immediately before complex glyph descriptors (before neume codes)
+" Can be repeated multiple times for cumulative effect
+"
+" Syntax patterns:
+"   //  = move right by nabclargerspace (LaTeX parameter)
+"   /   = move right by nabcinterelementspace (LaTeX parameter)  
+"   ``  = move left by nabclargerspace (LaTeX parameter)
+"   `   = move left by nabcinterelementspace (LaTeX parameter)
+"
+" Examples:
+"   //vi     - large right spacing before virga
+"   /pu      - small right spacing before punctum
+"   ``ta     - large left spacing before tractulus
+"   `gr      - small left spacing before gravis
+"   /////    - equivalent to // + // + / (multiple small + large spacings)
+"   `````    - equivalent to `` + `` + ` (multiple left spacings)
+"
+" Pattern matches any sequence of spacing characters that precedes a neume code
+" Uses positive lookahead to ensure spacing is followed by a valid neume
+syntax match nabcHorizontalSpacing /[\/`]\+\ze\(vi\|pu\|ta\|gr\|cl\|pe\|po\|to\|ci\|sc\|pf\|sf\|tr\|st\|ds\|ts\|tg\|bv\|tv\|pq\|pr\|pi\|vs\|or\|sa\|ql\|qi\|pt\|ni\|oc\|un\)/ contained containedin=nabcSnippet
+
+" NABC horizontal spacing highlight group
+highlight link nabcHorizontalSpacing Special
 
 " GABC pitches: a-p (excluding 'o'), both lowercase (punctum quadratum) and uppercase (punctum inclinatum)
 " Lowercase: a b c d e f g h i j k l m n p (punctum quadratum - square note)
