@@ -6417,6 +6417,261 @@ Both VimScript and Tree-sitter implementations:
 
 ---
 
-**Document Version**: 2.6  
+## Iteration 30: NABC-Lines Header Support and Limitations
+
+**Date**: October 17, 2025  
+**Scope**: Attempted implementation of dynamic GABC/NABC alternation based on `nabc-lines` header  
+**Result**: Partial implementation with documented limitations
+
+### Problem Statement
+
+The GABC format supports a `nabc-lines` header that should control alternation patterns:
+
+- **nabc-lines: 0 or absent**: All snippets are GABC (`gabc1|gabc2|gabc3|...`)
+- **nabc-lines: 1**: Standard alternation (`gabc1|nabc1|gabc2|nabc2|...`)
+- **nabc-lines: N**: Multiple NABC lines per GABC (`gabc1|nabc1|nabc2|...|nabcN|gabc2|...`)
+
+**Example with nabc-lines: 3**:
+```gabc
+nabc-lines: 3;
+%%
+Text(gabc1|nabc1|nabc2|nabc3|gabc2|nabc4|nabc5|nabc6|...)
+```
+
+### Implementation Attempts
+
+#### VimScript Implementation (Partial)
+
+**Header Recognition**:
+```viml
+" Detect nabc-lines header and highlight appropriately
+syntax match gabcNabcLinesHeader /^\s*nabc-lines\s*:\s*\([0-9]\+\)/ containedin=gabcHeaders contains=gabcNabcLinesField,gabcNabcLinesValue
+syntax match gabcNabcLinesField /nabc-lines/ contained
+syntax match gabcNabcLinesValue /[0-9]\+/ contained
+
+" Highlight groups for nabc-lines header
+highlight link gabcNabcLinesField Keyword
+highlight link gabcNabcLinesValue Number
+```
+
+**What Works**:
+- ✅ Properly recognizes and highlights `nabc-lines` header
+- ✅ Parses numeric values correctly
+- ✅ Integrates with existing header syntax
+
+**What Doesn't Work**:
+- ❌ Cannot dynamically change snippet alternation patterns
+- ❌ Cannot use header values to modify regex behavior  
+- ❌ Cannot implement stateful counting of pipe delimiters
+
+#### Tree-sitter Implementation (Partial)
+
+**Grammar Extensions**:
+```javascript
+header_field: $ => choice(
+  // Special handling for nabc-lines header
+  seq(
+    field('name', alias('nabc-lines', $.nabc_lines_field)),
+    ':',
+    field('value', $.nabc_lines_value),
+    ';'
+  ),
+  // Generic header field...
+),
+
+nabc_lines_field: $ => 'nabc-lines',
+nabc_lines_value: $ => /[0-9]+/,
+```
+
+**What Works**:
+- ✅ Recognizes `nabc-lines` as special header field
+- ✅ Creates dedicated AST nodes for programmatic access
+- ✅ Enables external tools to read header values
+
+**What Doesn't Work**:
+- ❌ Cannot use header values to modify parsing behavior
+- ❌ Grammar rules are static, cannot adapt to semantic content
+- ❌ No mechanism for cross-reference between headers and notation
+
+### Fundamental Limitations
+
+#### VimScript Limitations
+
+**Regex-Based Syntax Engine**:
+1. **Static Patterns**: Vim syntax uses fixed regex patterns that cannot change based on file content
+2. **No Cross-Reference**: Cannot reference header values in notation patterns
+3. **No State Tracking**: Cannot count delimiters with context from headers
+4. **No Semantic Analysis**: Pure syntax matching without content understanding
+
+**Example of What's Impossible**:
+```viml
+" This CANNOT be done in VimScript
+if header_value == "3"
+  syntax match nabcSnippet /|\@<=[^|)]\+/ " First NABC
+  syntax match nabcSnippet2 /|\@<=[^|)]\+/ " Second NABC  
+  syntax match nabcSnippet3 /|\@<=[^|)]\+/ " Third NABC
+  syntax match gabcSnippet /|\@<=[^|)]\+/ " Back to GABC
+endif
+```
+
+#### Tree-sitter Limitations
+
+**Grammar-Based Parser Generator**:
+1. **Compile-Time Rules**: Grammar rules are fixed at parser generation time
+2. **Context-Free Parsing**: Cannot reference semantic content from other parts of file
+3. **No Dynamic Behavior**: Parser behavior cannot change based on parsed content
+4. **Syntactic Only**: Designed for syntax, not semantic analysis
+
+**Example of What's Impossible**:
+```javascript
+// This CANNOT be done in Tree-sitter grammar
+snippet_list: $ => {
+  const nabcLines = getHeaderValue('nabc-lines');
+  if (nabcLines === 0) {
+    return repeat($.gabc_snippet);
+  } else {
+    // Dynamic alternation based on header value
+  }
+}
+```
+
+### What Was Implemented
+
+#### Partial Support Features
+
+**Header Recognition** (Both Projects):
+- Proper parsing and highlighting of `nabc-lines` header
+- Numeric value extraction and validation
+- Integration with existing syntax systems
+
+**Structural Preparation**:
+- Framework for enhanced snippet handling  
+- Better organization for future semantic tools
+- Clear documentation of limitations
+
+#### Testing Infrastructure
+
+**Test Files Created**:
+- `test_nabc_lines.gabc`: Examples of different nabc-lines values
+- `test_nabc_lines.sh`: Validation script with limitation documentation
+- Tree-sitter corpus tests for header parsing
+
+### Alternative Solutions
+
+#### Possible Workarounds
+
+**External Processing**:
+1. **Preprocessor**: External tool to expand GABC based on `nabc-lines` header
+2. **Language Server**: LSP implementation with full semantic analysis
+3. **Editor Plugins**: Custom logic in editor-specific plugins
+
+**Editor Integration**:
+1. **Custom Highlighters**: Editor-specific semantic highlighting
+2. **Template Expansion**: Dynamic snippet generation based on headers
+3. **Validation Tools**: External checkers for proper alternation
+
+#### Future Enhancement Path
+
+**Language Server Protocol (LSP)**:
+```javascript
+// Example LSP implementation
+function analyzeAlternation(document) {
+  const nabcLines = parseHeader(document, 'nabc-lines');
+  const notations = findNotationBlocks(document);
+  
+  return notations.map(notation => {
+    const snippets = parseSnippets(notation);
+    return validateAlternation(snippets, nabcLines);
+  });
+}
+```
+
+### User Impact and Recommendations
+
+#### Current Capabilities
+
+**What Users Get**:
+- ✅ Proper header recognition and highlighting
+- ✅ Basic GABC/NABC snippet detection
+- ✅ Error detection for invalid characters
+- ✅ Comprehensive syntax highlighting for valid notation
+
+**What Users Don't Get**:
+- ❌ Automatic validation of alternation patterns
+- ❌ Header-based alternation enforcement
+- ❌ Dynamic behavior based on nabc-lines values
+
+#### Recommended Workflow
+
+**For GABC Authors**:
+1. Use existing syntax highlighting for basic validation
+2. Rely on Gregorio compiler for full semantic validation
+3. Use external tools for complex alternation checking
+4. Consider LSP implementation for advanced features
+
+**For Tool Developers**:
+1. Use Tree-sitter AST for structural analysis
+2. Implement semantic layer on top of syntax parsing
+3. Build external validation tools for alternation patterns
+4. Consider creating specialized GABC language server
+
+### Technical Documentation
+
+#### Parser Behavior
+
+**Current Alternation Logic**:
+```
+First snippet after '(': Always parsed as GABC
+Subsequent snippets after '|': Parsed as NABC or GABC based on content patterns
+```
+
+**Header Processing**:
+```
+nabc-lines header: Recognized and parsed
+Header value: Available in AST (Tree-sitter) or highlighted (VimScript)
+Semantic usage: Not implemented (fundamental limitation)
+```
+
+### Files Modified
+
+**gregorio.nvim**:
+- `syntax/gabc.vim`: Added nabc-lines header recognition
+- `test_nabc_lines.gabc`: Test file with various header configurations
+- `test_nabc_lines.sh`: Comprehensive testing and limitation documentation
+
+**tree-sitter-gregorio**:
+- `grammar.js`: Added nabc_lines_field and nabc_lines_value rules
+- `test/corpus/nabc_lines_header.txt`: Test corpus for header parsing
+
+### Future Directions
+
+#### Potential Solutions
+
+**Language Server Implementation**:
+- Full semantic analysis of GABC files
+- Cross-reference between headers and notation
+- Real-time validation of alternation patterns
+- Integration with modern editors via LSP
+
+**Compiler Integration**:
+- Enhanced Gregorio compiler output with validation details
+- Integration with build systems for checking
+- Editor plugins that use compiler for semantic analysis
+
+### Conclusion
+
+This iteration demonstrates both the capabilities and limitations of syntax-based parsers for GABC processing. While we successfully implemented header recognition and basic structural parsing, the fundamental limitation of dynamic alternation based on semantic content remains.
+
+**Key Takeaways**:
+1. **Syntax parsers excel at structure, struggle with semantics**
+2. **Header recognition is achievable, dynamic behavior is not**  
+3. **Full GABC validation requires semantic analysis beyond syntax parsing**
+4. **Future enhancements need LSP or compiler-based solutions**
+
+This limitation is clearly documented to guide users and future developers toward appropriate solutions for their specific needs.
+
+---
+
+**Document Version**: 2.7  
 **Last Updated**: October 17, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim

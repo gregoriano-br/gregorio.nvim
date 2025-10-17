@@ -47,7 +47,11 @@ highlight link gabcComment Comment
 
 " Header pairs inside gabcHeaders: HEADER:VALUE;
 " - Field (before colon), Colon, Value (until semicolon), Semicolon
+" - Special handling for nabc-lines header to detect NABC alternation mode
 syntax match gabcHeaderField /^\s*[^%:][^:]*\ze:/ containedin=gabcHeaders nextgroup=gabcHeaderColon
+syntax match gabcNabcLinesHeader /^\s*nabc-lines\s*:\s*\([0-9]\+\)/ containedin=gabcHeaders contains=gabcNabcLinesField,gabcNabcLinesValue
+syntax match gabcNabcLinesField /nabc-lines/ contained
+syntax match gabcNabcLinesValue /[0-9]\+/ contained
 syntax match gabcHeaderColon /:/ contained containedin=gabcHeaders nextgroup=gabcHeaderValue skipwhite
 syntax match gabcHeaderValue /\%(:\s*\)\@<=[^;]*/ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon
 syntax match gabcHeaderSemicolon /;/ contained containedin=gabcHeaders
@@ -862,5 +866,10 @@ highlight link gabcPitchAttrValue String
 " Highlight invalid characters with Error highlighting for debugging
 highlight link gabcError Error
 highlight link nabcError Error
+
+" NABC-LINES HEADER HIGHLIGHTING: Special header detection
+" Highlight the nabc-lines header field and its numeric value
+highlight link gabcNabcLinesField Keyword
+highlight link gabcNabcLinesValue Number
 
 let b:current_syntax = 'gabc'
