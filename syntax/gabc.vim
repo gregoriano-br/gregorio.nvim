@@ -1,314 +1,886 @@
-" Vim syntax file
-" Language: GABC (Gregorian Chant notation)
-" Maintainer: Laércio de Sousa
-" Latest Revision: 2025
+" Vim syntax file for GABC (fresh minimal)
 
-" Allow re-source when g:gabc_devmode is set (development override)
+" Guard: allow re-sourcing during dev if needed
 if exists('b:current_syntax') && !exists('g:gabc_devmode')
-  finish
-endif
-" In devmode, clear old header groups to avoid stale references
-if exists('g:gabc_devmode')
-  silent! syntax clear gabcHeaderField
-  silent! syntax clear gabcHeaderColon
-  silent! syntax clear gabcHeaderSemicolon
-  silent! syntax clear gabcHeaderValue
-  silent! syntax clear gabcHeader
+	finish
 endif
 
-" Comments
-syntax match gabcComment /^%.*$/
+" Include LaTeX syntax for embedded LaTeX in <v> tags
+" Save current syntax state
+let s:current_syntax_save = exists('b:current_syntax') ? b:current_syntax : ''
+unlet! b:current_syntax
+
+" Try to load tex syntax
+try
+	syntax include @texSyntax $VIMRUNTIME/syntax/tex.vim
+catch
+	" If tex.vim is not available, create an empty cluster
+	syntax cluster texSyntax
+endtry
+
+" Don't restore b:current_syntax yet - let it stay unset until end of file
+
+" 1) Section separator: a line that is exactly '%%' (must come before comment)
+syntax match gabcSectionSeparator /^%%$/ nextgroup=gabcNotes skipnl skipwhite
+" Dedicated one-line region covering only the separator line, to avoid inclusion in notes
+" Separator line is matched but not assigned to a region; this avoids interfering with notes start
+
+" 2) Comments: any % starts a comment (but not the standalone %% line)
+"   - Line comments at BOL: '%%...' (non-separator) and '%...'
+syntax match gabcComment /^%%.\+/ containedin=gabcHeaders,gabcNotes
+syntax match gabcComment /^%[^%].*/ containedin=gabcHeaders,gabcNotes
+"   - Single '%' line
+syntax match gabcComment /^%$/ containedin=gabcHeaders,gabcNotes
+"   - Inline comments: % anywhere after some preceding non-% character
+syntax match gabcComment /\([^%]\)\@<=%.*/ contains=@NoSpell containedin=gabcHeaders,gabcNotes
+
+" 3) Regions: header (from BOF up to just before %%), notes (from %% to EOF)
+" Strategy: gabcHeaders goes from BOF to just before %%, gabcNotes goes from line after %% to EOF
+" The %% line itself is handled by gabcSectionSeparator
+syntax region gabcHeaders start=/\%^/ end=/^%%$/me=e-2 keepend
+syntax match gabcSectionSeparator /^%%$/ nextgroup=gabcNotes skipnl skipwhite skipempty
+syntax region gabcNotes start=/^/ end=/\%$/ keepend contains=gabcComment,gabcClef,gabcLyricCentering,gabcTranslation,gabcNotation,gabcSyllable contained
+
+" Highlight groups (do not color the regions themselves)
+highlight link gabcSectionSeparator Special
 highlight link gabcComment Comment
-" Header separator - must come before header region
-syntax match gabcHeaderSeparator /^%%.*$/
 
-" Header section - starts at beginning of file, ends before the %% separator line.
-syntax region gabcHeader start=/\%^/ end=/^\s*%%\s*$/me=s-1 contains=gabcHeaderField,gabcHeaderColon,gabcHeaderValue,gabcHeaderSemicolon,gabcComment
-" Body section - from the %% separator to EOF
-syntax region gabcBody start=/^\s*%%\s*$/ end=/\%$/ keepend contains=gabcComment,gabcNotesRegion,gabcBoldTag,gabcItalicTag,gabcColorTag,gabcSmallCapsTag,gabcUnderlineTag,gabcTeletypeTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcTranslation,gabcLatexVerbatim,gabcSyllableContent
-highlight link gabcBody Normal
-" Body region - tudo após o separador %% até EOF
-" Field name (before ':')
-syntax match gabcHeaderField /^[\w-]\+/ contained nextgroup=gabcHeaderColon
-" Colon separator
-syntax match gabcHeaderColon /:/ contained nextgroup=gabcHeaderValue skipwhite
-" Value (text after ':' up to ';') - lookbehind ensures we are after colon
-syntax match gabcHeaderValue /\%(:\s*\)\@<=\zs[^;]*\ze;/ contained nextgroup=gabcHeaderSemicolon
-" Semicolon terminator
-syntax match gabcHeaderSemicolon /;/ contained
+" Header pairs inside gabcHeaders: HEADER:VALUE;
+" - Field (before colon), Colon, Value (until semicolon), Semicolon
+" - Special handling for nabc-lines header to detect NABC alternation mode
+syntax match gabcHeaderField /^\s*[^%:][^:]*\ze:/ containedin=gabcHeaders nextgroup=gabcHeaderColon
+syntax match gabcNabcLinesHeader /^\s*nabc-lines\s*:\s*\([0-9]\+\)/ containedin=gabcHeaders contains=gabcNabcLinesField,gabcNabcLinesValue
+syntax match gabcNabcLinesField /nabc-lines/ contained
+syntax match gabcNabcLinesValue /[0-9]\+/ contained
+syntax match gabcHeaderColon /:/ contained containedin=gabcHeaders nextgroup=gabcHeaderValue skipwhite
+" Header values with potential LaTeX content
+" Special headers that support LaTeX commands within <v> tags
+syntax region gabcHeaderValueLatex start=/\%(name\s*:\s*\)\@<=[^;]*<v>/ end=+</v>[^;]*+ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon contains=gabcHeaderLatexTag
+syntax region gabcHeaderValueLatex start=/\%(annotation\s*:\s*\)\@<=[^;]*<v>/ end=+</v>[^;]*+ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon contains=gabcHeaderLatexTag
+syntax region gabcHeaderValueLatex start=/\%(commentary\s*:\s*\)\@<=[^;]*<v>/ end=+</v>[^;]*+ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon contains=gabcHeaderLatexTag
 
-highlight link gabcHeaderField Keyword
-highlight link gabcHeaderColon Operator
-highlight link gabcHeaderValue String
-highlight link gabcHeaderSemicolon Delimiter
-highlight link gabcHeaderSeparator Special
+" LaTeX verbatim tag within header values
+syntax region gabcHeaderLatexTag matchgroup=gabcHeaderLatexDelim start=+<v>+ end=+</v>+ contained contains=@texSyntax oneline
 
-" Musical notes and neumes
-syntax match gabcNotePitch /[a-np]/ contained
-syntax match gabcNotePitchAccident /[a-np][#xy]/ contained
-syntax match gabcNoteInclinatum /[A-NP][012]\?/ contained
-syntax match gabcCustos /[a-np]\+/ contained
+" Standard header values (fallback for headers without LaTeX)
+syntax match gabcHeaderValue /\%(:\s*\)\@<=[^;]*/ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon
+syntax match gabcHeaderSemicolon /;/ contained containedin=gabcHeaders
 
-" Note shapes and modifiers
-syntax match gabcOriscus /o[01]\?/ contained
-syntax match gabcOriscusScapus /O[01]\?/ contained
-syntax match gabcPesQuadratum /q/ contained
-syntax match gabcQuilisma /w/ contained
-syntax match gabcQuilismaQuadratum /W/ contained
-syntax match gabcVirga /v/ contained
-syntax match gabcVirgaReversa /V/ contained
-syntax match gabcBivirga /vv/ contained
-syntax match gabcTrivirga /vvv/ contained
-syntax match gabcStropha /s/ contained
-syntax match gabcDistropha /ss/ contained
-syntax match gabcTristropha /sss/ contained
-syntax match gabcLiquescentDeminutus /\~/ contained
-syntax match gabcLiquescentAugmented />/ contained
-syntax match gabcLiquescentDiminished /</ contained
-syntax match gabcLinea /=/ contained
-syntax match gabcCavum /r0\?/ contained
-syntax match gabcQuadratumSurrounded /R/ contained
-syntax match gabcInitioDebilis /-/ contained
-syntax match gabcNoteFusion /@/ contained
+" Header highlight links (use default to avoid overriding colorschemes)
+highlight default link gabcHeaderField Keyword
+highlight default link gabcHeaderLatexDelim Delimiter
+highlight default link gabcHeaderColon Operator
+highlight default link gabcHeaderValue String
+highlight default link gabcHeaderSemicolon Delimiter
 
-" Additional symbols
-syntax match gabcPunctumMora /\\./ contained
-syntax match gabcEpisema /_[0-5]*/ contained
-syntax match gabcIctus /'[01]\?/ contained
-syntax match gabcAccentAbove /r[1-8]/ contained
+" Clefs inside notes region: c1..c4 | cb1..cb4 | f1..f4 with optional @ connectors
+" Restrict to whole parenthesized group so we don't match inside other note clusters
+syntax match gabcClef /(\%(cb\|[cf]\)[1-4]\%(@\%(cb\|[cf]\)[1-4]\)*)/ containedin=gabcNotes contains=gabcClefLetter,gabcClefNumber,gabcClefConnector
+syntax match gabcClefLetter /\(cb\|[cf]\)/ contained containedin=gabcClef
+syntax match gabcClefNumber /[1-4]/ contained containedin=gabcClef
+syntax match gabcClefConnector /@/ contained containedin=gabcClef
 
-" Spacing controls
-syntax match gabcSpacingSmall /\// contained
-syntax match gabcSpacingMedium /\/\// contained
-syntax match gabcSpacingZero /!/ contained
-syntax match gabcSpacingNonBreaking /! / contained
-syntax region gabcSpacingFactored start=+/\\\[+ end=+\\\]+ contained
+" Clef highlight links
+highlight link gabcClefLetter Keyword
+highlight link gabcClefNumber Number
+highlight link gabcClefConnector Operator
 
-" Separation bars
-syntax match gabcVirgula /`0\?/ contained
-syntax match gabcDivisioMinimis /\^0\?/ contained
-syntax match gabcDivisioMinima /,[0_]\?/ contained
-syntax match gabcDivisioMinor /;[1-6]\?/ contained
-syntax match gabcDivisioMaior /:?\?/ contained
-syntax match gabcDivisioFinalis /::/ contained
+" Lyric centering delimiters: {...} for centering a group of letters
+" Must be defined before gabcSyllable to take precedence
+syntax region gabcLyricCentering matchgroup=gabcLyricCenteringDelim start=/{/ end=/}/ keepend oneline containedin=gabcNotes
 
-" Clefs
-syntax match gabcClef /[cf]b\?[1-5]/ contained
-highlight link gabcClef Special
+" Translation delimiters: [...] for alternative translation text
+syntax region gabcTranslation matchgroup=gabcTranslationDelim start=/\[/ end=/\]/ keepend oneline containedin=gabcNotes
 
-" Line breaks
-syntax match gabcLineBreakJustified /z[+-]\?/ contained
-syntax match gabcLineBreakRagged /Z[+-]\?/ contained
+" Musical notation: (...) contains alternating GABC and NABC snippets separated by |
+" Structure: (gabc1|nabc1|gabc2|nabc2|...)
+syntax region gabcNotation matchgroup=gabcNotationDelim start=/(/ end=/)/ keepend oneline containedin=gabcNotes
 
-" Choral signs and braces
-syntax region gabcChoralSign start=+\\\[ch:+ end=+\\\]+ contained
-syntax region gabcChoralSignNabc start=+\\\[cn:+ end=+\\\]+ contained
-syntax region gabcBraceRoundedOver start=+\\\[ob:+ end=+\\\]+ contained
-syntax region gabcBraceRoundedUnder start=+\\\[ub:+ end=+\\\]+ contained
-syntax region gabcBraceCurlyOver start=+\\\[ocb:+ end=+\\\]+ contained
-syntax region gabcBraceCurlyAccentedOver start=+\\\[ocba:+ end=+\\\]+ contained
+" KNOWN LIMITATION: Perfect GABC/NABC alternation is not possible with Vim syntax
+" Vim's regex-based syntax engine does not support stateful alternation (counting delimiters).
+" Multiple approaches were attempted:
+" 1. Regions with lookbehinds - failed (snippets not activated)
+" 2. Matchgroup + nextgroup chains - failed (region conflicts)
+" 3. Position-specific patterns with \@<= - failed (lookbehind doesn't work inside regions)
+" 4. Numbered regions with nextgroup - failed (all matched to last region)
+" 5. Variable-length lookbehind patterns - failed (incorrect matching)
+"
+" CURRENT APPROACH: Simple transparent groups for basic structure
+" - gabcSnippet: matches first snippet (after opening paren)
+" - nabcSnippet: matches subsequent snippets (after pipe delimiter)
+" - Both are transparent to allow GABC elements to highlight correctly
+" - Limitation: GABC elements may appear in NABC context (acceptable tradeoff)
+"
+" FUTURE IMPROVEMENT: Implement proper alternation using Tree-sitter parser
 
-" Stem length controls
-syntax match gabcStemLong +\\\[ll:1\\\]+ contained
-syntax match gabcStemShort +\\\[ll:0\\\]+ contained
+" GABC snippet: First position (immediately after opening paren)
+syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation transparent
 
-" Custom ledger lines
-syntax region gabcLedgerLineOver start=+\\\[oll:+ end=+\\\]+ contained
-syntax region gabcLedgerLineUnder start=+\\\[ull:+ end=+\\\]+ contained
+" NABC snippet: All subsequent positions (after pipe delimiter)
+" Contains St. Gall and Laon neume codes
+" Note: NOT transparent - contains specific NABC syntax elements
+syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter,nabcSubPrepunctisDescriptor,nabcSignificantLetter,nabcTironianLetter,nabcHorizontalSpacing
 
-" Slurs
-syntax region gabcSlurOver start=+\\\[oslur:+ end=+\\\]+ contained
-syntax region gabcSlurUnder start=+\\\[uslur:+ end=+\\\]+ contained
+" ERROR HANDLING: Fallback patterns for invalid characters
+" These patterns catch any character that doesn't match valid syntax rules
+" and highlight them as errors for debugging and validation
 
-" Episema tuning
-syntax region gabcEpisemaOver start=+\\\[oh:\?+ end=+\\\]+ contained
-syntax region gabcEpisemaUnder start=+\\\[uh:\?+ end=+\\\]+ contained
+" GABC Error: Invalid characters in GABC snippets
+" Matches specifically problematic characters that are never valid in GABC
+syntax match gabcError /[$%&\\]\+/ contained containedin=gabcSnippet
 
-" Above-lines text
-syntax region gabcAboveLinesText start=+\\\[alt:+ end=+\\\]+ contained
+" NABC Error: Invalid characters in NABC snippets  
+" Matches specifically problematic characters that are never valid in NABC
+syntax match nabcError /[$%&\\]\+/ contained containedin=nabcSnippet
 
-" Macros
-syntax region gabcNoteMacro start=+\\\[nm+ end=+\\\]+ contained
-syntax region gabcGlyphMacro start=+\\\[gm+ end=+\\\]+ contained
-syntax region gabcElementMacro start=+\\\[em+ end=+\\\]+ contained
+" ============================================================================
+" NABC GLYPH DESCRIPTORS: Structured grouping of neume elements
+" ============================================================================
 
-" Verbatim sections in notes
-syntax region gabcNoteVerbatim start=+\\\[nv:+ end=+\\\]+ contained
-syntax region gabcGlyphVerbatim start=+\\\[gv:+ end=+\\\]+ contained
-syntax region gabcElementVerbatim start=+\\\[ev:+ end=+\\\]+ contained
+" BASIC GLYPH DESCRIPTOR: neume + optional(glyph_modifier) + optional(pitch_descriptor)
+" This is the fundamental unit of NABC notation, representing a single neume
+" with its modifiers and pitch information.
+" Examples:
+"   vi       - simple neume (virga)
+"   viS      - neume with modifier
+"   viha     - neume with pitch descriptor
+"   viS2ha   - neume with modifier and pitch descriptor
+"
+" Pattern: Match complete sequence as a region
+" Region boundaries:
+"   start: neume code (2 letters)
+"   end: lookahead for non-modifier/non-pitch character or end of snippet
+syntax match nabcBasicGlyphDescriptor 
+  \ /\(vi\|pu\|ta\|gr\|cl\|pe\|po\|to\|ci\|sc\|pf\|sf\|tr\|st\|ds\|ts\|tg\|bv\|tv\|pq\|pr\|pi\|vs\|or\|sa\|ql\|qi\|pt\|ni\|oc\|un\)\([SGM\->~][1-9]\?\)\?\(h[a-np]\)\?/
+  \ contained containedin=nabcSnippet
+  \ contains=nabcNeume,nabcGlyphModifier,nabcGlyphModifierNumber,nabcPitchDescriptorH,nabcPitchDescriptorPitch
+  \ transparent
 
-" Notes region (inside parentheses)
-syntax region gabcNotesRegion start=/(/ end=/)/ contains=gabcNotePitch,gabcNotePitchAccident,gabcNoteInclinatum,gabcCustos,gabcOriscus,gabcOriscusScapus,gabcPesQuadratum,gabcQuilisma,gabcQuilismaQuadratum,gabcVirga,gabcVirgaReversa,gabcBivirga,gabcTrivirga,gabcStropha,gabcDistropha,gabcTristropha,gabcLiquescentDeminutus,gabcLiquescentAugmented,gabcLiquescentDiminished,gabcLinea,gabcCavum,gabcQuadratumSurrounded,gabcInitioDebilis,gabcNoteFusion,gabcPunctumMora,gabcEpisema,gabcIctus,gabcAccentAbove,gabcSpacingSmall,gabcSpacingMedium,gabcSpacingZero,gabcSpacingNonBreaking,gabcSpacingFactored,gabcVirgula,gabcDivisioMinimis,gabcDivisioMinima,gabcDivisioMinor,gabcDivisioMaior,gabcDivisioFinalis,gabcClef,gabcLineBreakJustified,gabcLineBreakRagged,gabcChoralSign,gabcChoralSignNabc,gabcBraceRoundedOver,gabcBraceRoundedUnder,gabcBraceCurlyOver,gabcBraceCurlyAccentedOver,gabcStemLong,gabcStemShort,gabcLedgerLineOver,gabcLedgerLineUnder,gabcSlurOver,gabcSlurUnder,gabcEpisemaOver,gabcEpisemaUnder,gabcAboveLinesText,gabcNoteMacro,gabcGlyphMacro,gabcElementMacro,gabcNoteVerbatim,gabcGlyphVerbatim,gabcElementVerbatim,gabcNabcRegion
+" COMPLEX GLYPH DESCRIPTOR DELIMITER: '!' separates basic glyph descriptors
+" Used to concatenate multiple basic glyph descriptors into a complex descriptor
+" Example: vi!pu!ta (three basic descriptors forming a complex descriptor)
+syntax match nabcComplexGlyphDelimiter /!/ contained containedin=nabcSnippet
 
-" NABC extended notation
-syntax region gabcNabcRegion start=/\|/ end=/\|/ contained contains=gabcNabcNeume,gabcNabcSubpunctis,gabcNabcPrepunctis,gabcNabcSignificantLetter,gabcNabcTironianLetter,gabcNabcSpacing
-syntax match gabcNabcNeume /\(vi\|vs\|pu\|gr\|ta\|cl\|pe\|pq\|pt\|po\|pf\|to\|tr\|ci\|sc\|sf\|st\|ds\|ts\|tg\|bv\|tv\|pr\|pi\|or\|sa\|ql\|qi\|un\|oc\)[1-9]\?\([GMS>~-][1-9]\?\)\?\(h[a-np]\)\?\(!\)\?/ contained
-syntax match gabcNabcSubpunctis /su\([nqtuvwxyz]\?\)\([1-9]\)/ contained
-syntax match gabcNabcPrepunctis /pp\([nqtuvwxyz]\?\)\([1-9]\)/ contained
-syntax match gabcNabcSignificantLetter /ls\(a\|al\|am\|b\|c\|cm\|co\|cw\|d\|e\|eq-\|eq\|equ\|ew\|f\|fid\|fr\|g\|h\|hn\|hp\|i\|im\|iv\|k\|l\|lb\|lc\|len\|lm\|lp\|lt\|m\|md\|moll\|n\|nl\|nt\|p\|par\|pfec\|pm\|pulcre\|s\|sb\|sc\|simil\|simp\|simpl\|simul\|sm\|sp\|st\|sta\|t\|tb\|th\|tm\|tw\|v\|vol\|x\)\([1-9]\)/ contained
-syntax match gabcNabcTironianLetter /lt\(do\|dr\|dx\|i\|ps\|qm\|sb\|se\|sj\|sl\|sn\|sp\|sr\|st\|us\)\([1-9]\)/ contained
-syntax match gabcNabcSpacing /\(\/\/\|\/\|``\|`\)/ contained
+" Highlight group for complex glyph descriptor delimiter
+highlight link nabcComplexGlyphDelimiter Delimiter
 
-" NABC pitch sub-highlights: 'h' and following pitch letter
-syntax match gabcNabcPitchPrefix /h/ contained containedin=gabcNabcNeume nextgroup=gabcNabcPitchLetter
-syntax match gabcNabcPitchLetter /[a-np]/ contained containedin=gabcNabcNeume
+" ============================================================================
+" NABC NEUMES: St. Gall and Laon neume codes
+" ============================================================================
+" Unified list from St. Gall and Laon codifications
+" These are keyword-like identifiers for specific neume shapes in early notation
 
-" NABC ls/lt sub-highlights: prefix vs argument
-syntax match gabcNabcLsPrefix /ls/ contained containedin=gabcNabcSignificantLetter nextgroup=gabcNabcLsArg
-syntax match gabcNabcLsArg /\%(ls\)\@<=\zs[a-z-]\+\ze[1-9]/ contained containedin=gabcNabcSignificantLetter
-syntax match gabcNabcLtPrefix /lt/ contained containedin=gabcNabcTironianLetter nextgroup=gabcNabcLtArg
-syntax match gabcNabcLtArg /\%(lt\)\@<=\zs[a-z]\+\ze[1-9]/ contained containedin=gabcNabcTironianLetter
+" NABC neume codes (2-letter codes)
+" Common to both St. Gall and Laon:
+" vi=virga, pu=punctum, ta=tractulus, gr=gravis, cl=clivis, pe=pes, po=porrectus
+" to=torculus, ci=climacus, sc=scandicus, pf=porrectus flexus, sf=scandicus flexus
+" tr=torculus resupinus, or=oriscus, ds=distropha, ts=tristropha, tg=trigonus
+" bv=bivirga, tv=trivirga, pr=pressus maior, pi=pressus minor, vs=virga strata
+" sa=salicus, pq=pes quassus, ql=quilisma, pt=pes stratus, ni=nihil (placeholder)
+"
+" St. Gall specific:
+" st=stropha
+"
+" Laon specific:
+" oc=oriscus-clivis, un=uncinus
+"
+" Pattern: 2-letter codes, case-sensitive
+" Must use simple pattern without word boundaries since NABC codes can be
+" followed by modifiers (-, ~, ', etc.) without spaces
+syntax match nabcNeume /\(vi\|pu\|ta\|gr\|cl\|pe\|po\|to\|ci\|sc\|pf\|sf\|tr\|st\|ds\|ts\|tg\|bv\|tv\|pq\|pr\|pi\|vs\|or\|sa\|ql\|qi\|pt\|ni\|oc\|un\)/ contained containedin=nabcSnippet
 
-" Fusible notes region
-syntax region gabcFusibleNotesRegion start=+@\\\[+ end=+\\\]+ contains=gabcNotePitch,gabcNotePitchAccident,gabcNoteInclinatum,gabcCustos,gabcOriscus,gabcOriscusScapus,gabcPesQuadratum,gabcQuilisma,gabcQuilismaQuadratum,gabcVirga,gabcVirgaReversa,gabcBivirga,gabcTrivirga,gabcStropha,gabcDistropha,gabcTristropha,gabcLiquescentDeminutus,gabcLiquescentAugmented,gabcLiquescentDiminished,gabcLinea,gabcCavum,gabcQuadratumSurrounded,gabcInitioDebilis,gabcNoteFusion,gabcPunctumMora,gabcEpisema,gabcIctus,gabcAccentAbove,gabcSpacingSmall,gabcSpacingMedium,gabcSpacingZero,gabcSpacingNonBreaking,gabcSpacingFactored,gabcVirgula,gabcDivisioMinimis,gabcDivisioMinima,gabcDivisioMinor,gabcDivisioMaior,gabcDivisioFinalis,gabcClef,gabcLineBreakJustified,gabcLineBreakRagged
+" NABC neume highlight group
+highlight link nabcNeume Keyword
 
-" Text markup tags
-syntax region gabcBoldTag start=/<b>/ end=/<\/b>/ contains=gabcSyllableContent
-syntax region gabcItalicTag start=/<i>/ end=/<\/i>/ contains=gabcSyllableContent
-syntax region gabcColorTag start=/<c>/ end=/<\/c>/ contains=gabcSyllableContent
-syntax region gabcSmallCapsTag start=/<sc>/ end=/<\/sc>/ contains=gabcSyllableContent
-syntax region gabcUnderlineTag start=/<ul>/ end=/<\/ul>/ contains=gabcSyllableContent
-syntax region gabcTeletypeTag start=/<tt>/ end=/<\/tt>/ contains=gabcSyllableContent
+" NABC GLYPH MODIFIERS: Apply to St. Gall and Laon neumes
+" These modifiers follow immediately after the neume code
+" All can optionally take a numeric suffix 1-9
+"
+" S = modification of the mark
+" G = modification of the grouping (neumatic break)
+" M = melodic modification
+" - = addition of episema
+" > = augmentive liquescence
+" ~ = diminutive liquescence
+"
+" Pattern: modifier character (simple match within nabcSnippet)
+" Note: Uses same highlighting as GABC modifiers for consistency
+syntax match nabcGlyphModifier /[SGM\->~]/ contained containedin=nabcSnippet
 
-" Special control tags
-syntax region gabcClearTag start=/<clear>/ end=/<\/clear>/ contains=gabcSyllableContent,gabcNotesRegion
-syntax region gabcElisionTag start=/<e>/ end=/<\/e>/ contains=gabcSyllableContent
-syntax region gabcEuouaeTag start=/<eu>/ end=/<\/eu>/ contains=gabcSyllableContent,gabcNotesRegion
-syntax region gabcNoLineBreakTag start=/<nlba>/ end=/<\/nlba>/ contains=gabcSyllableContent,gabcNotesRegion
-syntax match gabcProtrusionTag /<pr\(:[0-9]\)\?\/\?>/ 
+" NABC glyph modifier numeric suffix: 1-9 immediately after modifier
+" Uses positive lookbehind to match digit only after a glyph modifier
+syntax match nabcGlyphModifierNumber /\([SGM\->~]\)\@<=[1-9]/ contained containedin=nabcSnippet
 
-" Other syllable tags
-syntax region gabcAboveLinesTextTag start=/<alt>/ end=/<\/alt>/ contains=gabcSyllableContent
-syntax region gabcSpecialTag start=/<sp>/ end=/<\/sp>/ contains=gabcSyllableContent
-syntax region gabcVerbatimTag start=/<v>/ end=/<\/v>/ contains=gabcLatexVerbatim
+" NABC highlight groups for modifiers (reuse GABC modifier styling)
+highlight link nabcGlyphModifier SpecialChar
+highlight link nabcGlyphModifierNumber Number
 
-" Translation text
-syntax region gabcTranslation start=/\[/ end=/\]/
-highlight link gabcTranslation String
+" NABC PITCH DESCRIPTOR: Elevates or lowers the neume relative to others
+" Follows immediately after glyph modifier (if present) or neume code
+" Format: 'h' followed by pitch letter [a-np]
+" Example: viha (virga at pitch 'a'), puShb (punctum with S modifier at pitch 'b')
+"
+" 'h' = height/pitch descriptor indicator (highlighted as Function)
+" [a-np] = target pitch (highlighted as parameter, like function argument)
+syntax match nabcPitchDescriptorH /h/ contained containedin=nabcSnippet
+syntax match nabcPitchDescriptorPitch /\(h\)\@<=[a-np]/ contained containedin=nabcSnippet
 
-" LaTeX verbatim content
-syntax match gabcLatexVerbatim /\\\\.*/
+" NABC pitch descriptor highlight groups
+highlight link nabcPitchDescriptorH Function
+highlight link nabcPitchDescriptorPitch Identifier
 
-" Syllable content (text between tags and notes)
-" Texto de sílabas (fora das notas e dentro de tags). Só aparece no corpo
-" (gabcBody, tags etc.) e fica desativado dentro de gabcNotesRegion.
-syntax match gabcSyllableContent /[^<>()\\[\\]]\+/ contained containedin=ALLBUT,gabcNotesRegion,gabcFusibleNotesRegion,gabcNabcRegion
+" ============================================================================
+" NABC SUBPUNCTIS/PREPUNCTIS DESCRIPTORS: Additional notation marks
+" ============================================================================
 
-" Highlight groups
-highlight link gabcNotePitch Constant
-highlight link gabcNotePitchAccident Special
-highlight link gabcNoteInclinatum Constant
-highlight link gabcCustos Special
+" SUBPUNCTIS/PREPUNCTIS DESCRIPTORS: Specialized notation for marks below/above neumes
+" Syntax: (su|pp) + optional_modifier + mandatory_number(1-9)
+" Multiple descriptors can appear consecutively in any order
+"
+" Base codes:
+"   su = subpunctis (marks below the neume)
+"   pp = prepunctis (marks above the neume)
+"
+" St. Gall modifiers:
+"   t = tractulus
+"   u = tractulus with episema  
+"   v = tractulus with double episema
+"   w = gravis
+"   x = liquescens stropha
+"   y = gravis with episema
+"
+" Laon modifiers:
+"   n = uncinus
+"   q = quilisma
+"   z = virga
+"   x = cephalicus
+"
+" Examples:
+"   su1      - simple subpunctis with count 1
+"   sut3     - subpunctis with tractulus modifier, count 3
+"   pp2      - simple prepunctis with count 2
+"   ppq5     - prepunctis with quilisma modifier, count 5
+"   su1pp2   - subpunctis count 1 followed by prepunctis count 2
 
-highlight link gabcOriscus Function
-highlight link gabcOriscusScapus Function
-highlight link gabcPesQuadratum Function
-highlight link gabcQuilisma Function
-highlight link gabcQuilismaQuadratum Function
-highlight link gabcVirga Function
-highlight link gabcVirgaReversa Function
-highlight link gabcBivirga Function
-highlight link gabcTrivirga Function
-highlight link gabcStropha Function
-highlight link gabcDistropha Function
-highlight link gabcTristropha Function
-highlight link gabcLiquescentDeminutus Function
-highlight link gabcLiquescentAugmented Function
-highlight link gabcLiquescentDiminished Function
-highlight link gabcLinea Function
-highlight link gabcCavum Function
-highlight link gabcQuadratumSurrounded Function
-highlight link gabcInitioDebilis Function
-highlight link gabcNoteFusion Keyword
+" NABC subpunctis/prepunctis complete descriptors: su/pp + optional modifier + mandatory number
+" Pattern matches the complete descriptor and uses 'contains' to highlight components
+syntax match nabcSubPrepunctisDescriptor /\%(su\|pp\)[tuvwxynqz]\?[1-9]/ contained containedin=nabcSnippet contains=nabcSubPrepunctisBase,nabcSubPrepunctisModifier,nabcSubPrepunctisNumber transparent
 
-highlight link gabcPunctumMora Special
-highlight link gabcEpisema Special
-highlight link gabcIctus Special
-highlight link gabcAccentAbove Special
+" NABC subpunctis/prepunctis base codes: su (subpunctis) and pp (prepunctis)
+syntax match nabcSubPrepunctisBase /\%(su\|pp\)/ contained
 
-highlight link gabcSpacingSmall Type
-highlight link gabcSpacingMedium Type
-highlight link gabcSpacingZero Type
-highlight link gabcSpacingNonBreaking Type
-highlight link gabcSpacingFactored Type
+" NABC subpunctis/prepunctis modifiers: St. Gall and Laon modifier characters  
+" St. Gall: t, u, v, w, x, y
+" Laon: n, q, z, x (x appears in both traditions with different meanings)
+syntax match nabcSubPrepunctisModifier /[tuvwxynqz]/ contained
 
-highlight link gabcVirgula Delimiter
-highlight link gabcDivisioMinimis Delimiter
-highlight link gabcDivisioMinima Delimiter
-highlight link gabcDivisioMinor Delimiter
-highlight link gabcDivisioMaior Delimiter
-highlight link gabcDivisioFinalis Delimiter
+" NABC subpunctis/prepunctis number: mandatory digit 1-9
+syntax match nabcSubPrepunctisNumber /[1-9]/ contained
 
-highlight link gabcLineBreakJustified PreProc
-highlight link gabcLineBreakRagged PreProc
+" NABC subpunctis/prepunctis highlight groups
+highlight link nabcSubPrepunctisBase Entity
+highlight link nabcSubPrepunctisModifier SpecialChar
+highlight link nabcSubPrepunctisNumber Number
 
-highlight link gabcChoralSign String
-highlight link gabcChoralSignNabc String
-highlight link gabcBraceRoundedOver String
-highlight link gabcBraceRoundedUnder String
-highlight link gabcBraceCurlyOver String
-highlight link gabcBraceCurlyAccentedOver String
+" ============================================================================
+" NABC SIGNIFICANT LETTERS AND TIRONIAN LETTERS: Annotation systems
+" ============================================================================
 
-highlight link gabcStemLong PreProc
-highlight link gabcStemShort PreProc
+" SIGNIFICANT LETTERS: Textual annotations using shorthand notation
+" Syntax: ls + shorthand + position_number(1-9)
+" Used in both St. Gall and Laon traditions with different shorthand sets
+" Examples:
+"   lsb1     - "bene" at position 1
+"   lseq2    - "equaliter" at position 2  
+"   lsfid3   - "fideliter" at position 3
 
-highlight link gabcLedgerLineOver String
-highlight link gabcLedgerLineUnder String
+" TIRONIAN LETTERS: Specialized annotation system (Laon only)
+" Syntax: lt + shorthand + position_number(1-9)
+" Uses Tironian notation (medieval shorthand system)
+" Examples:
+"   lti4     - "iusum" at position 4
+"   ltdo5    - "deorsum" at position 5
+"   ltqm6    - "quam mox" at position 6
 
-highlight link gabcSlurOver String
-highlight link gabcSlurUnder String
+" SIGNIFICANT LETTERS complete descriptors: ls + shorthand + mandatory number
+" Pattern matches complete descriptor and uses 'contains' to highlight components
+" Supports both St. Gall and Laon shorthand sets
+syntax match nabcSignificantLetter /ls\(al\|am\|b\|c\|cm\|co\|cw\|d\|e\|eq\|ew\|fid\|fr\|g\|i\|im\|s\|iv\|k\|l\|lb\|lc\|len\|lm\|lp\|lt\|m\|moll\|p\|par\|pfec\|pm\|pulcre\|sb\|sc\|simil\|simul\|sm\|st\|sta\|t\|tb\|tm\|tw\|v\|vol\|x\|a\|eq-\|equ\|f\|h\|hn\|hp\|n\|nl\|nt\|md\|simp\|simpl\|sp\|th\)[1-9]/ contained containedin=nabcSnippet contains=nabcSignificantBase,nabcSignificantShorthand,nabcSignificantNumber transparent
 
-highlight link gabcEpisemaOver String
-highlight link gabcEpisemaUnder String
+" TIRONIAN LETTERS complete descriptors: lt + shorthand + mandatory number
+" Pattern matches complete descriptor for Laon tironian notation
+syntax match nabcTironianLetter /lt\(i\|do\|dr\|dx\|ps\|qm\|sb\|se\|sj\|sl\|sn\|sp\|sr\|st\|us\)[1-9]/ contained containedin=nabcSnippet contains=nabcTironianBase,nabcTironianShorthand,nabcTironianNumber transparent
 
-highlight link gabcAboveLinesText String
+" SIGNIFICANT LETTERS base code: ls (significant letter indicator)
+syntax match nabcSignificantBase /ls/ contained
 
-highlight link gabcNoteMacro Macro
-highlight link gabcGlyphMacro Macro
-highlight link gabcElementMacro Macro
+" SIGNIFICANT LETTERS shorthand: textual abbreviations for common terms
+" St. Gall shorthands (48 total):
+" al=altius, am=altius mediocriter, b=bene, c=celeriter, cm=celeriter mediocriter,
+" co=coniunguntur, cw=celeriter wide, d=deprimatur, e=equaliter, eq=equaliter,
+" ew=equaliter wide, fid=fideliter, fr=frendor, g=gutture, i=iusum,
+" im=iusum mediocriter, s=sursum, iv=iusum valde, k=klenche, l=levare,
+" lb=levare bene, lc=levare celeriter, len=leniter, lm=levare mediocriter,
+" lp=levare parvum, lt=levare tenere, m=mediocriter, moll=molliter, p=parvum,
+" par=paratim, pfec=perfecte, pm=parvum mediocriter, pulcre=pulcre,
+" sb=sursum bene, sc=sursum celeriter, simil=similiter, simul=simul,
+" sm=sursum mediocriter, st=sursum tenere, sta=statim, t=tenere,
+" tb=tenere bene, tm=tenere mediocriter, tw=tenere wide, v=valde,
+" vol=volubiliter, x=expectare
+"
+" Laon shorthands (25 total):
+" a=augete, c=celeriter, eq=equaliter, eq-=equaliter, equ=equaliter,
+" f=fastigium, h=humiliter, hn=humiliter nectum, hp=humiliter parum,
+" l=levare, n=non/negare/nectum/naturaliter, nl=non levare, nt=non tenere,
+" m=mediocriter, md=mediocriter, s=sursum, simp=simpliciter, simpl=simpliciter,
+" sp=sursum parum, st=sursum tenere, t=tenere, th=tenere humiliter
+syntax match nabcSignificantShorthand /\(al\|am\|b\|c\|cm\|co\|cw\|d\|e\|eq\|ew\|fid\|fr\|g\|i\|im\|s\|iv\|k\|l\|lb\|lc\|len\|lm\|lp\|lt\|m\|moll\|p\|par\|pfec\|pm\|pulcre\|sb\|sc\|simil\|simul\|sm\|st\|sta\|t\|tb\|tm\|tw\|v\|vol\|x\|a\|eq-\|equ\|f\|h\|hn\|hp\|n\|nl\|nt\|md\|simp\|simpl\|sp\|th\)/ contained
 
-highlight link gabcNoteVerbatim String
-highlight link gabcGlyphVerbatim String
-highlight link gabcElementVerbatim String
+" SIGNIFICANT LETTERS position number: mandatory digit 1-9
+syntax match nabcSignificantNumber /[1-9]/ contained
 
-" NABC highlighting
-highlight link gabcNabcNeume Identifier
-highlight link gabcNabcSubpunctis Identifier
-highlight link gabcNabcPrepunctis Identifier
-highlight link gabcNabcSignificantLetter Identifier
-highlight link gabcNabcTironianLetter Identifier
-highlight link gabcNabcSpacing Type
-highlight link gabcNabcPitchPrefix Function
-highlight link gabcNabcPitchLetter Identifier
-highlight link gabcNabcLsPrefix Function
-highlight link gabcNabcLsArg Identifier
-highlight link gabcNabcLtPrefix Function
-highlight link gabcNabcLtArg Identifier
+" TIRONIAN LETTERS base code: lt (tironian letter indicator)  
+syntax match nabcTironianBase /lt/ contained
 
-" Markup tag highlighting
-highlight link gabcBoldTag htmlBold
-highlight link gabcItalicTag htmlItalic
-highlight link gabcColorTag Special
-highlight link gabcSmallCapsTag Special
-highlight link gabcUnderlineTag htmlUnderline
-highlight link gabcTeletypeTag Special
+" TIRONIAN LETTERS shorthand: Laon tironian notation abbreviations (15 total)
+" i=iusum, do=deorsum, dr=devertit, dx=devexum, ps=prode sub eam,
+" qm=quam mox, sb=sub, se=seorsum, sj=subjice, sl=saltim, sn=sonare,
+" sp=supra, sr=sursum, st=saltate, us=ut supra
+syntax match nabcTironianShorthand /\(i\|do\|dr\|dx\|ps\|qm\|sb\|se\|sj\|sl\|sn\|sp\|sr\|st\|us\)/ contained
 
-highlight link gabcClearTag PreProc
-highlight link gabcElisionTag PreProc
-highlight link gabcEuouaeTag PreProc
-highlight link gabcNoLineBreakTag PreProc
-highlight link gabcProtrusionTag PreProc
+" TIRONIAN LETTERS position number: mandatory digit 1-9
+syntax match nabcTironianNumber /[1-9]/ contained
 
-highlight link gabcAboveLinesTextTag String
-highlight link gabcSpecialTag Special
-highlight link gabcVerbatimTag String
+" NABC significant and tironian letters highlight groups
+highlight link nabcSignificantBase Function
+highlight link nabcSignificantShorthand Identifier
+highlight link nabcSignificantNumber Number
+highlight link nabcTironianBase Function
+highlight link nabcTironianShorthand Identifier
+highlight link nabcTironianNumber Number
 
-highlight link gabcLatexVerbatim String
-highlight link gabcSyllableContent Normal
+" ============================================================================
+" NABC HORIZONTAL SPACING ADJUSTMENT DESCRIPTOR: Manual positioning control
+" ============================================================================
 
-" Regions highlighting
-highlight link gabcNotesRegion Structure
-highlight link gabcFusibleNotesRegion Structure
-highlight link gabcNabcRegion Identifier
+" HORIZONTAL SPACING ADJUSTMENT: Controls positioning before neume groups
+" Appears immediately before complex glyph descriptors (before neume codes)
+" Can be repeated multiple times for cumulative effect
+"
+" Syntax patterns:
+"   //  = move right by nabclargerspace (LaTeX parameter)
+"   /   = move right by nabcinterelementspace (LaTeX parameter)  
+"   ``  = move left by nabclargerspace (LaTeX parameter)
+"   `   = move left by nabcinterelementspace (LaTeX parameter)
+"
+" Examples:
+"   //vi     - large right spacing before virga
+"   /pu      - small right spacing before punctum
+"   ``ta     - large left spacing before tractulus
+"   `gr      - small left spacing before gravis
+"   /////    - equivalent to // + // + / (multiple small + large spacings)
+"   `````    - equivalent to `` + `` + ` (multiple left spacings)
+"
+" Pattern matches any sequence of spacing characters that precedes a neume code
+" Uses positive lookahead to ensure spacing is followed by a valid neume
+syntax match nabcHorizontalSpacing /[\/`]\+\ze\(vi\|pu\|ta\|gr\|cl\|pe\|po\|to\|ci\|sc\|pf\|sf\|tr\|st\|ds\|ts\|tg\|bv\|tv\|pq\|pr\|pi\|vs\|or\|sa\|ql\|qi\|pt\|ni\|oc\|un\)/ contained containedin=nabcSnippet
+
+" NABC horizontal spacing highlight group
+highlight link nabcHorizontalSpacing Special
+
+" GABC pitches: a-p (excluding 'o'), both lowercase (punctum quadratum) and uppercase (punctum inclinatum)
+" Lowercase: a b c d e f g h i j k l m n p (punctum quadratum - square note)
+" Uppercase: A B C D E F G H I J K L M N P (punctum inclinatum - inclined note)
+" Note: 'o' and 'O' are excluded as they are not valid pitch letters in GABC
+" Character class approach: [a-np] gets a-n and p, [A-NP] gets A-N and P
+syntax match gabcPitch /[a-npA-NP]/ contained containedin=gabcSnippet
+
+" Pitch inclinatum suffix: optional 0, 1, or 2 after uppercase pitches (A-NP)
+" 0: left-leaning (descending interval)
+" 1: right-leaning (ascending interval)
+" 2: no-leaning (unison/same pitch)
+" Pattern matches the digit immediately after an uppercase pitch letter
+syntax match gabcPitchSuffix /\([A-NP]\)\@<=[012]/ contained containedin=gabcSnippet
+
+" GABC ACCIDENTALS: alter the pitch (includes pitch letter for position on staff)
+" The pitch letter comes BEFORE the accidental symbol
+" Example: (ixiv) = i + x (flat on i) + i + v (virga)
+" NOTE: Accidentals use lowercase pitch letters ONLY to indicate staff position
+
+" Accidentals with parentheses: pitch followed by x?, #?, y?
+" Parentheses indicate cautionary/editorial accidentals
+syntax match gabcAccidental /[a-np][x#y]?/ contained containedin=gabcSnippet
+
+" Double sharp: pitch followed by ## (soft sharp)
+syntax match gabcAccidental /[a-np]##/ contained containedin=gabcSnippet
+
+" Soft natural: pitch followed by Y
+syntax match gabcAccidental /[a-np]Y/ contained containedin=gabcSnippet
+
+" Basic accidentals: pitch followed by x (flat), # (sharp), y (natural)
+syntax match gabcAccidental /[a-np][x#y]/ contained containedin=gabcSnippet
+
+" GABC PITCH MODIFIERS: symbols that modify note appearance/meaning
+
+" Initio debilis: - before pitch (weakened start)
+" Uses positive lookahead to match only when followed by a valid pitch
+syntax match gabcInitioDebilis /-\([a-npA-NP]\)\@=/ contained containedin=gabcSnippet
+
+" Oriscus modifiers: o (oriscus), O (oriscus scapus)
+" Can be followed by optional suffix 0 or 1
+syntax match gabcOriscus /[oO]/ contained containedin=gabcSnippet
+
+" Oriscus suffix: 0 or 1 after o or O
+syntax match gabcOriscusSuffix /\([oO]\)\@<=[01]/ contained containedin=gabcSnippet
+
+" Simple single-character modifiers (after pitch)
+" q: quadratum, w: quilisma, W: quilisma quadratum
+" v: virga (stem right), V: virga (stem left)
+" s: stropha, ~: liquescent deminutus
+" <: augmented liquescent, >: diminished liquescent
+" =: linea, r: punctum cavum, R: punctum quadratum surrounded by lines
+" .: punctum mora vocis (rhythmic dot)
+" NOTE: These are defined BEFORE compound modifiers so compounds take precedence
+syntax match gabcModifierSimple /[qwWvVs~<>=rR.]/ contained containedin=gabcSnippet
+
+" Special modifiers with numbers (r followed by digit)
+" r0: punctum cavum surrounded by lines
+" r1-r8: various signs above staff (musica ficta, accents, etc.)
+" MUST be defined AFTER simple 'r' to take precedence
+" Pattern captures 'r' followed by single digit 0-8
+syntax match gabcModifierSpecial /r[0-8]/ contained containedin=gabcSnippet
+
+" Horizontal episema: _ optionally followed by suffix 0-5
+" The underscore is the main modifier, suffix indicates episema length/position
+syntax match gabcModifierEpisema /_/ contained containedin=gabcSnippet
+
+" Episema suffix number: digit 0-5 immediately after _
+" Uses positive lookbehind to match digit only after _
+syntax match gabcModifierEpisemaNumber /\(_\)\@<=[0-5]/ contained containedin=gabcSnippet
+
+" Ictus: ' optionally followed by suffix 0 or 1
+" The apostrophe is the main modifier, suffix indicates ictus type
+syntax match gabcModifierIctus /'/ contained containedin=gabcSnippet
+
+" Ictus suffix number: digit 0 or 1 immediately after '
+" Uses positive lookbehind to match digit only after '
+syntax match gabcModifierIctusNumber /\('\)\@<=[01]/ contained containedin=gabcSnippet
+
+" Compound modifiers: multi-character sequences
+" MUST be defined AFTER simple modifiers to take precedence in Vim syntax matching
+" Order matters: longer patterns last to take highest precedence
+syntax match gabcModifierCompound /vv/ contained containedin=gabcSnippet   " bivirga
+syntax match gabcModifierCompound /ss/ contained containedin=gabcSnippet   " distropha
+syntax match gabcModifierCompound /vvv/ contained containedin=gabcSnippet  " trivirga
+syntax match gabcModifierCompound /sss/ contained containedin=gabcSnippet  " tristropha
+
+" GABC SEPARATION BARS: Divisio marks for phrase/section boundaries
+" Bars indicate liturgical divisions with varying weights
+" Order matters: compound bars (::, :?) BEFORE simple bars to take precedence
+
+" Compound bars (define first for higher precedence)
+syntax match gabcBarDouble /::/ contained containedin=gabcSnippet          " divisio finalis (double full bar)
+syntax match gabcBarDotted /:?/ contained containedin=gabcSnippet          " dotted divisio maior
+
+" Simple bars
+syntax match gabcBarMaior /:/ contained containedin=gabcSnippet            " divisio maior (full bar)
+syntax match gabcBarMinor /;/ contained containedin=gabcSnippet            " divisio minor (half bar)
+syntax match gabcBarMinima /,/ contained containedin=gabcSnippet           " divisio minima (quarter bar)
+syntax match gabcBarMinimaOcto /\^/ contained containedin=gabcSnippet      " divisio minimis/eighth bar
+syntax match gabcBarVirgula /`/ contained containedin=gabcSnippet          " virgula
+
+" Bar numeric suffixes (use lookbehind to match only after specific bars)
+" divisio minor (;) can have suffixes 1-8
+syntax match gabcBarMinorSuffix /\(;\)\@<=[1-8]/ contained containedin=gabcSnippet
+
+" divisio minima (,), minimis (^), and virgula (`) can have optional suffix 0
+syntax match gabcBarZeroSuffix /\([,\^`]\)\@<=0/ contained containedin=gabcSnippet
+
+" Bar modifiers
+" ' = vertical episema (already defined as gabcModifierIctus in rhythmic section)
+" _ = bar brace (already defined as gabcModifierEpisema in rhythmic section)
+" These modifiers reuse existing highlight groups when applied to bars
+
+" GABC CUSTOS: End-of-line guide indicating next pitch on following line
+" Syntax: pitch+ (e.g., f+, g+, a+)
+" The custos shows which pitch begins the next line
+" Both pitch and + are highlighted as operators for visual consistency
+" NOTE: Custos uses lowercase pitch letters ONLY to indicate staff position
+syntax match gabcCustos /[a-np]+/ contained containedin=gabcSnippet
+
+" GABC LINE BREAKS: Force line breaks in the score
+" z = justified line break (text justified to width)
+" Z = ragged line break (text not justified, ragged right edge)
+" Suffixes:
+"   + = forced automatic custos
+"   - = no custos
+"   0 = special case for clef changes (z only)
+" Examples: z, Z, z+, Z+, z-, Z-, z0
+
+" Line break base symbols (z = justified, Z = ragged)
+syntax match gabcLineBreak /[zZ]/ contained containedin=gabcSnippet
+
+" Line break suffixes: + (custos), - (no custos), 0 (clef change - z only)
+" Use lookbehind to match only after line break symbols
+syntax match gabcLineBreakSuffix /\([zZ]\)\@<=[+-]/ contained containedin=gabcSnippet
+syntax match gabcLineBreakSuffix /\(z\)\@<=0/ contained containedin=gabcSnippet
+
+" GABC NEUME FUSIONS: @ connector for fusing notes into single neume
+" Two forms:
+" 1. Individual pitch fusion: f@g@h (connector between pitches)
+" 2. Collective pitch fusion: @[fghghi] (function-style with bracket group)
+
+" Collective fusion: @[...] function-style fusion
+" The @ symbol acts as a function, and the bracketed pitches are the argument
+syntax region gabcFusionCollective matchgroup=gabcFusionFunction start=/@\[/ end=/\]/ keepend oneline contained containedin=gabcSnippet contains=gabcPitch,gabcAccidental,gabcModifierSimple,gabcModifierCompound,gabcModifierSpecial,gabcInitioDebilis,gabcOriscus,gabcOriscusSuffix,gabcPitchSuffix transparent
+
+" Individual pitch fusion connector: @ between pitches (not before bracket)
+" Uses negative lookahead to avoid matching @[ (which is collective fusion)
+syntax match gabcFusionConnector /@\(\[\)\@!/ contained containedin=gabcSnippet
+
+" GABC NEUME SPACING: operators for controlling space between neumes
+" Simplified implementation: / is an operator, [...] is a suffix with brackets and number
+" CRITICAL: In Vim, LAST defined pattern wins for overlapping matches
+
+" Fixed spacing operators
+" Define simple / FIRST, then override with more specific patterns
+syntax match gabcSpacingSmall /\// contained containedin=gabcSnippet       " / = small separation
+syntax match gabcSpacingHalf /\/0/ contained containedin=gabcSnippet       " /0 = half space (same neume) - overrides /
+syntax match gabcSpacingSingle /\/!/ contained containedin=gabcSnippet     " /! = small separation (same neume) - overrides /
+syntax match gabcSpacingDouble /\/\// contained containedin=gabcSnippet    " // = medium separation - overrides / (defined LAST!)
+
+" Spacing suffix: [...] after / for scaled spacing
+" Brackets act as delimiters, number inside is the scaling factor
+" Use lookbehind to match [ only after / (to avoid conflict with shape hints)
+syntax match gabcSpacingBracket /\(\/\)\@<=\[/ contained containedin=gabcSnippet     " [ delimiter for spacing factor (after /)
+syntax match gabcSpacingBracket /\]/ contained containedin=gabcSnippet     " ] delimiter for spacing factor
+syntax match gabcSpacingFactor /\(\[\)\@<=-\?\d\+\(\.\d\+\)\?/ contained containedin=gabcSnippet  " numeric factor AFTER [ (positive lookbehind)
+
+" Zero-width space: ! (when alone or followed by space for non-breaking)
+" Must come AFTER /! to not interfere
+syntax match gabcSpacingZero /!/ contained containedin=gabcSnippet
+
+" ============================================================================
+" SPECIALIZED PITCH ATTRIBUTES: Semantic attribute types with specific meanings
+" These MUST be defined BEFORE generic attributes to take precedence
+" ============================================================================
+
+" CHORAL SIGNS: Text annotations for choir directors
+" [cs:text] - choral sign with custom text
+" [cn:code] - choral sign with NABC neume code
+syntax match gabcAttrChoralSign /\[cs:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrChoralNabc /\[cn:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" BRACES: Grouping indicators for neumes
+" [ob:1] or [ob:0] - overbrace (above staff)
+" [ub:1] or [ub:0] - underbrace (below staff)  
+" [ocb:1] or [ocb:0] - overcurly brace
+" [ocba:1] or [ocba:0] - overcurly brace with accent
+syntax match gabcAttrBrace /\[ob:[01]\]/ contained containedin=gabcSnippet
+syntax match gabcAttrBrace /\[ub:[01]\]/ contained containedin=gabcSnippet
+syntax match gabcAttrBrace /\[ocb:[01]\]/ contained containedin=gabcSnippet
+syntax match gabcAttrBrace /\[ocba:[01]\]/ contained containedin=gabcSnippet
+
+" STEM LENGTH: Custom stem length for bottom line notes
+" [ll:value] - adjusts vertical stem extension
+syntax match gabcAttrStemLength /\[ll:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" CUSTOM LEDGER LINES: Manual ledger line positioning
+" [oll:position] - over ledger lines (above staff)
+" [ull:position] - under ledger lines (below staff)
+syntax match gabcAttrLedgerLines /\[oll:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrLedgerLines /\[ull:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" SIMPLE SLURS: Manual slur/ligature marks
+" [oslur:type] - over slur (above staff)
+" [uslur:type] - under slur (below staff)
+syntax match gabcAttrSlur /\[oslur:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrSlur /\[uslur:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" HORIZONTAL EPISEMA TUNING: Fine-tune episema positioning
+" [oh:adjustment] - over horizontal episema
+" [uh:adjustment] - under horizontal episema
+syntax match gabcAttrEpisemaTune /\[oh:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+syntax match gabcAttrEpisemaTune /\[uh:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" ABOVE LINES TEXT: Text displayed above staff (alternative to <alt> tag)
+" [alt:text] - text annotation above staff
+syntax match gabcAttrAboveLinesText /\[alt:\([^\]]\+\)\]/ contained containedin=gabcSnippet
+
+" VERBATIM TEX: Embedded TeX code at different scopes
+" [nv:tex] - note level verbatim TeX
+" [gv:tex] - glyph level verbatim TeX  
+" [ev:tex] - element level verbatim TeX
+" These use region syntax to enable LaTeX highlighting within the value
+syntax region gabcAttrVerbatimNote matchgroup=gabcAttrVerbatimDelim start=/\[nv:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
+syntax region gabcAttrVerbatimGlyph matchgroup=gabcAttrVerbatimDelim start=/\[gv:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
+syntax region gabcAttrVerbatimElement matchgroup=gabcAttrVerbatimDelim start=/\[ev:/ end=/\]/ contained containedin=gabcSnippet oneline contains=@texSyntax
+
+" NO CUSTOS: Suppress automatic custos rendering at line breaks
+" [nocustos] - prevents custos generation at natural line break point
+" Boolean flag attribute (no value required)
+syntax match gabcAttrNoCustos /\[nocustos\]/ contained containedin=gabcSnippet
+
+" MACROS: Predefined notation shortcuts at different scopes
+" [nm#] - note level macro (# = 0-9)
+" [gm#] - glyph level macro (# = 0-9)
+" [em#] - element level macro (# = 0-9)
+" Macro identifier (nm/gm/em) highlighted as Function
+" Macro number (0-9) highlighted as Number (parameter)
+syntax match gabcMacroNote /\[nm[0-9]\]/ contained containedin=gabcSnippet contains=gabcMacroIdentifier,gabcMacroNumber
+syntax match gabcMacroGlyph /\[gm[0-9]\]/ contained containedin=gabcSnippet contains=gabcMacroIdentifier,gabcMacroNumber
+syntax match gabcMacroElement /\[em[0-9]\]/ contained containedin=gabcSnippet contains=gabcMacroIdentifier,gabcMacroNumber
+
+" Macro components (for fine-grained highlighting)
+syntax match gabcMacroIdentifier /\[\@<=\(nm\|gm\|em\)/ contained
+syntax match gabcMacroNumber /\([nge]m\)\@<=[0-9]/ contained
+
+" ============================================================================
+" GENERIC PITCH ATTRIBUTES: Fallback for unrecognized attribute types
+" Defined AFTER specialized attributes to catch remaining cases
+" ============================================================================
+
+" GABC PITCH ATTRIBUTES: Generic [attribute:value] syntax
+" This is a general mechanism for pitch-level metadata annotations
+" Syntax: [attr:value] immediately after a pitch
+" Examples: [shape:stroke], [shape:virga], [color:red], etc.
+"
+" Components:
+" - Brackets: [ and ] (Delimiter)
+" - Attribute name: any word before the colon (e.g., "shape", "color")
+" - Colon: : (separator between attribute name and value)
+" - Value: any non-bracket characters after the colon
+"   Note: Paren matching is disabled in values (e.g., "1{" won't trigger missing "}" error)
+"
+" Implementation strategy:
+" - Use lookahead/lookbehind to avoid conflicts with spacing brackets /[...]
+" - Attribute brackets: [ must be followed by word:\w+:
+" - Closing bracket: ] must be preceded by non-bracket content
+
+" Pitch attribute brackets (delimiters)
+" Opening bracket: [ followed by any attribute name and colon (e.g., [shape:, [color:)
+" Use lookahead to match [ only when followed by "word characters + colon" pattern
+syntax match gabcPitchAttrBracket /\[\(\w\+:\)\@=/ contained containedin=gabcSnippet
+
+" Closing bracket: ] preceded by any non-whitespace (end of attribute value)
+" Use lookbehind to match ] only when preceded by value content
+syntax match gabcPitchAttrBracket /\(\S\)\@<=\]/ contained containedin=gabcSnippet
+
+" Pitch attribute name: any word characters between [ and :
+" Matches attribute name (e.g., "shape", "color", "custom")
+" Pattern: word chars after [ and before :
+syntax match gabcPitchAttrName /\(\[\)\@<=\w\+\(:\)\@=/ contained containedin=gabcSnippet
+
+" Pitch attribute colon: ":" separator
+" Matches : when preceded by [attribute_name
+syntax match gabcPitchAttrColon /\(\[\w\+\)\@<=:/ contained containedin=gabcSnippet
+
+" Pitch attribute value: content after ":" up to closing bracket
+" Matches any non-bracket characters after attribute:
+" Pattern: content after [attr: and before ]
+" Uses region to disable paren matching within the value (via 'contained' and specific pattern)
+syntax region gabcPitchAttrValue start=/\(\[\w\+:\)\@<=/ end=/\(\]\)\@=/ contained containedin=gabcSnippet oneline
+
+" Note: The 'oneline' option ensures the region doesn't span multiple lines
+" The region implicitly disables Vim's built-in paren matching for its contents
+
+" Syllables: any run of characters outside parentheses within notes (exclude tag brackets)
+syntax match gabcSyllable /[^()<>]\+/ contained containedin=gabcNotes contains=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcProtrusionTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag,gabcLyricCentering,gabcTranslation transparent
+
+" XML-like inline tags within syllables
+" Tag regions (opening and closing) with inner text per markup type
+syntax region gabcBoldTag      start=+<b>+   end=+</b>+   keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcBoldText
+syntax region gabcColorTag     start=+<c>+   end=+</c>+   keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcColorText
+syntax region gabcItalicTag    start=+<i>+   end=+</i>+   keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcItalicText
+syntax region gabcSmallCapsTag start=+<sc>+  end=+</sc>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcSmallCapsText
+syntax region gabcTeletypeTag  start=+<tt>+  end=+</tt>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcTeletypeText
+syntax region gabcUnderlineTag start=+<ul>+  end=+</ul>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcUnderlineText
+
+" Additional GABC-specific tags
+syntax region gabcClearTag          start=+<clear>+  end=+</clear>+  keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName
+syntax region gabcElisionTag        start=+<e>+      end=+</e>+      keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcElisionText
+syntax region gabcEuouaeTag         start=+<eu>+     end=+</eu>+     keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName
+syntax region gabcNoLineBreakTag    start=+<nlba>+   end=+</nlba>+   keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName
+syntax region gabcProtrusionTag     start=+<pr\%(:[.0-9]\+\)\?>+ end=+</pr>+ keepend oneline transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcProtrusionTagName
+syntax region gabcAboveLinesTextTag start=+<alt>+    end=+</alt>+    keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcAboveLinesText
+syntax region gabcSpecialTag        start=+<sp>+     end=+</sp>+     keepend transparent containedin=gabcNotes contains=gabcTagBracket,gabcTagSlash,gabcTagName,gabcSpecialText
+" Verbatim tag with embedded LaTeX: matchgroup separates delimiters from content
+syntax region gabcVerbatimTag matchgroup=gabcVerbatimDelim start=+<v>+ end=+</v>+ keepend containedin=gabcNotes contains=@texSyntax,gabcVerbatimText
+
+" Tag components - define in order of decreasing specificity
+" Brackets first (lowest priority for overlaps)
+syntax match gabcTagBracket /[<>]/ contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag
+" Tag names next (medium priority)  
+syntax match gabcTagName    /\%(<\|<\/\)\@<=\%(b\|c\|i\|sc\|tt\|ul\|clear\|e\|eu\|nlba\|alt\|sp\|v\)\ze>/ contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag,gabcClearTag,gabcElisionTag,gabcEuouaeTag,gabcNoLineBreakTag,gabcAboveLinesTextTag,gabcSpecialTag,gabcVerbatimTag
+" Protrusion tag name (without colon/number - those are handled separately)
+syntax match gabcProtrusionTagName /<\@<=pr/ contained containedin=gabcProtrusionTag
+" Slash last (highest priority - defined last wins in Vim)
+syntax match gabcTagSlash   /<\@<=\// contained containedin=gabcBoldTag,gabcColorTag,gabcItalicTag,gabcSmallCapsTag,gabcTeletypeTag,gabcUnderlineTag
+
+" Protrusion tag components (define after general tag components for specificity)
+syntax match gabcProtrusionColon  /:/ contained containedin=gabcProtrusionTag
+syntax match gabcProtrusionNumber /[.0-9]\+/ contained containedin=gabcProtrusionTag
+
+" Inner text: match content between '>' of opening tag and '<' of closing tag
+" Using lookbehind/lookahead to exclude the tag delimiters from the match
+syntax match gabcBoldText      /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcBoldTag
+syntax match gabcColorText     /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcColorTag
+syntax match gabcItalicText    /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcItalicTag
+syntax match gabcSmallCapsText /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcSmallCapsTag
+syntax match gabcTeletypeText  /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcTeletypeTag
+syntax match gabcUnderlineText /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcUnderlineTag
+
+" Inner text for additional tags
+syntax match gabcElisionText      /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcElisionTag
+syntax match gabcAboveLinesText   /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcAboveLinesTextTag
+syntax match gabcSpecialText      /\(>\)\@<=[^<]\+\(<\)\@=/ contained containedin=gabcSpecialTag
+" Note: gabcVerbatimText is not needed - LaTeX syntax is included directly in gabcVerbatimTag via @texSyntax
+
+" Tag highlight links and styles
+highlight link gabcTagBracket Delimiter
+highlight link gabcTagSlash   Delimiter
+highlight link gabcTagName    Keyword
+
+highlight default gabcBoldText      term=bold cterm=bold gui=bold
+highlight default gabcItalicText    term=italic cterm=italic gui=italic
+highlight default gabcUnderlineText term=underline cterm=underline gui=underline
+highlight default link gabcTeletypeText Constant
+highlight default link gabcSmallCapsText Identifier
+highlight default link gabcColorText    Special
+
+" Additional tag text styles
+highlight default gabcElisionText    term=italic cterm=italic gui=italic
+highlight default link gabcAboveLinesText String
+highlight default link gabcSpecialText Special
+
+" Protrusion tag component highlights
+highlight link gabcProtrusionTagName Keyword
+highlight link gabcProtrusionColon Operator
+highlight link gabcProtrusionNumber Number
+
+" Verbatim tag delimiter highlight
+highlight link gabcVerbatimDelim Delimiter
+
+" Lyric centering delimiters and text
+highlight link gabcLyricCenteringDelim Delimiter
+highlight default link gabcLyricCentering Special
+
+" Translation delimiters and text
+highlight link gabcTranslationDelim Delimiter
+highlight default link gabcTranslation String
+
+" Musical notation delimiters
+highlight link gabcNotationDelim Delimiter
+highlight link gabcSnippetDelim Operator
+
+" GABC pitches: note letters that specify pitch height
+highlight link gabcPitch Character
+
+" GABC pitch inclinatum suffix: direction indicator (0=left, 1=right, 2=none)
+highlight link gabcPitchSuffix Number
+
+" GABC pitch modifiers: symbols that modify the appearance/meaning of pitches
+highlight link gabcInitioDebilis Identifier
+highlight link gabcOriscus Identifier
+highlight link gabcOriscusSuffix Number
+highlight link gabcModifierSimple Identifier
+highlight link gabcModifierCompound Identifier
+highlight link gabcModifierSpecial Identifier
+
+" GABC rhythmic and articulation modifiers
+highlight link gabcModifierEpisema Identifier
+highlight link gabcModifierEpisemaNumber Number
+highlight link gabcModifierIctus Identifier
+highlight link gabcModifierIctusNumber Number
+
+" GABC separation bars: divisio marks for phrase/section boundaries
+" Similar to semicolons in code - clear structural markers
+highlight link gabcBarDouble Special
+highlight link gabcBarDotted Special
+highlight link gabcBarMaior Special
+highlight link gabcBarMinor Special
+highlight link gabcBarMinima Special
+highlight link gabcBarMinimaOcto Special
+highlight link gabcBarVirgula Special
+highlight link gabcBarMinorSuffix Number
+highlight link gabcBarZeroSuffix Number
+
+" GABC custos: end-of-line guide showing next pitch
+highlight link gabcCustos Operator
+
+" GABC line breaks: force line breaks in the score
+" Statement highlight for clear differentiation from separation bars (Special)
+highlight link gabcLineBreak Statement
+highlight link gabcLineBreakSuffix Identifier
+
+" GABC accidentals: symbols indicating pitch alteration (includes pitch letter for position)
+highlight link gabcAccidental Function
+
+" GABC neume fusions: @ connector for fusing notes into single neume
+highlight link gabcFusionConnector Operator
+highlight link gabcFusionFunction Function
+
+" GABC neume spacing: operators for controlling space between neumes
+highlight link gabcSpacingDouble Operator
+highlight link gabcSpacingSingle Operator
+highlight link gabcSpacingHalf Operator
+highlight link gabcSpacingSmall Operator
+highlight link gabcSpacingZero Operator
+highlight link gabcSpacingBracket Delimiter
+highlight link gabcSpacingFactor Number
+
+" GABC specialized pitch attributes: Semantic attribute types
+" Choral signs: annotations for choir directors
+highlight link gabcAttrChoralSign Type
+highlight link gabcAttrChoralNabc Type
+
+" Braces: grouping indicators
+highlight link gabcAttrBrace Function
+
+" Stem length: custom stem adjustment
+highlight link gabcAttrStemLength Number
+
+" Ledger lines: manual positioning
+highlight link gabcAttrLedgerLines Function
+
+" Slurs: manual ligature marks
+highlight link gabcAttrSlur Function
+
+" Episema tuning: fine positioning
+highlight link gabcAttrEpisemaTune Number
+
+" Above lines text: staff annotations
+highlight link gabcAttrAboveLinesText String
+
+" Verbatim TeX: embedded LaTeX code (delimiters only, content uses @texSyntax)
+highlight link gabcAttrVerbatimDelim Special
+
+" No custos: suppress automatic custos rendering
+highlight link gabcAttrNoCustos Keyword
+
+" Macros: predefined notation shortcuts (identifier as Function, number as Number)
+highlight link gabcMacroIdentifier Function
+highlight link gabcMacroNumber Number
+
+" GABC pitch attributes: Generic [attribute:value] syntax for pitch-level metadata
+" Examples: [shape:stroke], [color:red], [custom:data]
+" These are fallback patterns for attributes not caught by specialized patterns above
+highlight link gabcPitchAttrBracket Delimiter
+highlight link gabcPitchAttrName PreProc
+highlight link gabcPitchAttrColon Special
+highlight link gabcPitchAttrValue String
+
+" GABC and NABC snippet containers (transparent - no direct highlighting)
+" These will contain future specific notation syntax
+
+" ERROR HIGHLIGHTING: Invalid syntax markers
+" Highlight invalid characters with Error highlighting for debugging
+highlight link gabcError Error
+highlight link nabcError Error
+
+" NABC-LINES HEADER HIGHLIGHTING: Special header detection
+" Highlight the nabc-lines header field and its numeric value
+highlight link gabcNabcLinesField Keyword
+highlight link gabcNabcLinesValue Number
 
 let b:current_syntax = 'gabc'

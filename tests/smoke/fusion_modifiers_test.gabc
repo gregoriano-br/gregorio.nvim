@@ -1,0 +1,31 @@
+name: Neume Fusion with Modifiers Test;
+%%
+% Test collective fusion with simple modifiers
+Test1(@[fv gw h~])normal()
+
+% Test collective fusion with liquescents
+Test2(@[f< g> h~])text()
+
+% Test collective fusion with compound modifiers
+Test3(@[fvv gss hvvv])words()
+
+% Test collective fusion with accidentals
+Test4(@[fx g# hy])music()
+
+% Test collective fusion with oriscus
+Test5(@[fo gh o1i])notes()
+
+% Test collective fusion with initio debilis
+Test6(@[-f -g -h])debilis()
+
+% Test collective fusion with inclinatum
+Test7(@[F0 G1 H2])inclinatum()
+
+% Test collective fusion with mixed elements
+Test8(@[fxv g#w h~< oss])complex()
+
+% Test collective fusion with special modifiers
+Test9(@[fr0 gv hr])cavum()
+
+% Test combined individual and collective with modifiers
+Test10(f@gv@h~)mixed(@[fxvg#wh~])end()

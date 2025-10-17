@@ -1,0 +1,43 @@
+name: Shape Hints Smoke Test;
+%%
+
+% === GABC Shape Hints Syntax Test ===
+% Testing [shape:STRING] immediately after pitches
+
+% Test 1: Basic shape hint
+(gf[shape:stroke])
+
+% Test 2: Shape hint with virga
+(h[shape:virga])
+
+% Test 3: Multiple pitches with shape hints
+(g[shape:punctum]f[shape:virga])
+
+% Test 4: Shape hint after uppercase pitch (inclinatum)
+(G[shape:stroke])
+
+% Test 5: Shape hint with pitch modifiers
+(gv[shape:virga])
+
+% Test 6: Shape hint after accidental
+(gx[shape:flat])
+
+% Test 7: Shape hint in a longer neume
+(gfg[shape:torculus])
+
+% Test 8: Shape hint with initio debilis
+(-g[shape:debilis])
+
+% Test 9: Shape hint combinations
+(g[shape:punctum]h[shape:virga]i[shape:quilisma])
+
+% Test 10: Shape hint after oriscus
+(go[shape:oriscus])
+
+% Test 11: Complex example with multiple features
+(gf[shape:stroke]gh~[shape:liquescent])
+
+% Test 12: Shape hint values with different strings
+(g[shape:custom]h[shape:special]i[shape:variant])
+
+% End of shape hints smoke test

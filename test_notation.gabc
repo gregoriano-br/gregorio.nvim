@@ -1,0 +1,6 @@
+name: Test Musical Notation;
+%%
+Simple(gabc) text(h)
+Alternating(gabc1|nabc1) more(i)
+Multiple(g1|n1|g2|n2|g3) end(j)
+Mixed{cent}[trad](notes|nabc) test(k)

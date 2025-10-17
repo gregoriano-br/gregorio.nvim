@@ -1,0 +1,106 @@
+name: NABC Significant/Tironian Letters Test;
+office-part: Test;
+annotation: Test;
+%%
+
+% Significant Letters - St. Gall shorthands
+A(|vilsb1|)men.          % virga + significant letter "bene" position 1
+A(|sulsc2|)men.          % subpunctis + significant letter "sursum celeriter" position 2
+A(|vitlseq3|)men.        % virga + tractulus + significant letter "equaliter" position 3
+
+% Significant Letters - Laon shorthands  
+A(|vilsa4|)men.          % virga + significant letter "augete" position 4
+A(|pulsh5|)men.          % punctum + significant letter "humiliter" position 5
+A(|talsnl6|)men.         % tractulus + significant letter "non levare" position 6
+
+% Tironian Letters - Laon only
+A(|vilti7|)men.          % virga + tironian letter "iusum" position 7
+A(|pultdo8|)men.         % punctum + tironian letter "deorsum" position 8
+A(|taltqm9|)men.         % tractulus + tironian letter "quam mox" position 9
+
+% Multiple letters consecutive
+A(|vilsb1lsc2|)men.      % virga + "bene" pos 1 + "sursum celeriter" pos 2
+A(|pultdo3lti4|)men.     % punctum + tironian "deorsum" pos 3 + tironian "iusum" pos 4
+
+% With subpunctis/prepunctis
+A(|visu1lsb2|)men.       % virga + subpunctis 1 + significant letter "bene" pos 2
+A(|pupp3ltdo4|)men.      % punctum + prepunctis 3 + tironian letter "deorsum" pos 4
+
+% Complex combinations
+A(|visu1pp2lsb3ltdo4|)men.  % virga + subpunctis + prepunctis + significant + tironian
+
+% St. Gall significant letters examples
+A(|vilsal1|)men.         % altius
+A(|vilsam2|)men.         % altius mediocriter
+A(|vilsc3|)men.          % celeriter
+A(|vilscm4|)men.         % celeriter mediocriter
+A(|vilsco5|)men.         % coniunguntur
+A(|vilscw6|)men.         % celeriter wide
+A(|vilsd7|)men.          % deprimatur
+A(|vilse8|)men.          % equaliter
+A(|vilsew9|)men.         % equaliter wide
+A(|vilsfid1|)men.        % fideliter
+A(|vilsfr2|)men.         % frendor
+A(|vilsg3|)men.          % gutture
+A(|vilsi4|)men.          % iusum
+A(|vilsim5|)men.         % iusum mediocriter
+A(|vilsiv6|)men.         % iusum valde
+A(|vilsk7|)men.          % klenche
+A(|vilsl8|)men.          % levare
+A(|vilslb9|)men.         % levare bene
+A(|vilslc1|)men.         % levare celeriter
+A(|vilslen2|)men.        % leniter
+A(|vilslm3|)men.         % levare mediocriter
+A(|vilslp4|)men.         % levare parvum
+A(|vilslt5|)men.         % levare tenere
+A(|vilsm6|)men.          % mediocriter
+A(|vilsmoll7|)men.       % molliter
+A(|vilsp8|)men.          % parvum
+A(|vilspar9|)men.        % paratim
+A(|vilspfec1|)men.       % perfecte
+A(|vilspm2|)men.         % parvum mediocriter
+A(|vilspulcre3|)men.     % pulcre
+A(|vilssb4|)men.         % sursum bene
+A(|vilssc5|)men.         % sursum celeriter
+A(|vilssimil6|)men.      % similiter
+A(|vilssimul7|)men.      % simul
+A(|vilssm8|)men.         % sursum mediocriter
+A(|vilsst9|)men.         % sursum tenere
+A(|vilssta1|)men.        % statim
+A(|vilst2|)men.          % tenere
+A(|vilstb3|)men.         % tenere bene
+A(|vilstm4|)men.         % tenere mediocriter
+A(|vilstw5|)men.         % tenere wide
+A(|vilsv6|)men.          % valde
+A(|vilsvol7|)men.        % volubiliter
+A(|vilsx8|)men.          % expectare
+
+% Laon significant letters examples
+A(|vilsa9|)men.          % augete
+A(|vilseq-1|)men.        % equaliter (alternate)
+A(|vilsequ2|)men.        % equaliter (alternate)
+A(|vilsf3|)men.          % fastigium
+A(|vilsh4|)men.          % humiliter
+A(|vilshn5|)men.         % humiliter nectum
+A(|vilshp6|)men.         % humiliter parum
+A(|vilsn7|)men.          % non/negare/nectum/naturaliter
+A(|vilsnt8|)men.         % non tenere
+A(|vilsmd9|)men.         % mediocriter (alternate)
+A(|vilssimp1|)men.       % simpliciter
+A(|vilssimpl2|)men.      % simpliciter (alternate)
+A(|vilssp3|)men.         % sursum parum
+A(|vilsth4|)men.         % tenere humiliter
+
+% Tironian letters examples (Laon only)
+A(|pultdr5|)men.         % devertit
+A(|pultdx6|)men.         % devexum
+A(|pultps7|)men.         % prode sub eam
+A(|pultsb8|)men.         % sub
+A(|pultse9|)men.         % seorsum
+A(|pultsj1|)men.         % subjice
+A(|pultsl2|)men.         % saltim
+A(|pultsn3|)men.         % sonare
+A(|pultsp4|)men.         % supra
+A(|pultsr5|)men.         % sursum
+A(|pultst6|)men.         % saltate
+A(|pultus7|)men.         % ut supra

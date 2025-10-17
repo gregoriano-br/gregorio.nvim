@@ -8,6 +8,8 @@ M.markup = require('gabc.markup')
 M.transpose = require('gabc.transpose')
 M.utils = require('gabc.utils')
 M.nabc = require('gabc.nabc')
+M.treesitter = require('gabc.treesitter')
+M.lsp = require('gabc.lsp')
 
 -- Setup function for plugin initialization
 function M.setup(opts)
@@ -24,6 +26,40 @@ function M.setup(opts)
     -- Auto commands
     auto_format = false,  -- Auto-format on save
     auto_validate = false,  -- Auto-validate on save
+    
+    -- Tree-sitter integration
+    treesitter = {
+      enabled = true,
+      auto_install = false,
+      highlighting = true,
+      textobjects = true,
+      incremental_selection = true,
+    },
+    
+    -- LSP integration
+    lsp = {
+      enabled = true,
+      auto_attach = true,
+      cmd = nil, -- Will use default or user-provided command
+      settings = {
+        validation = {
+          enabled = true,
+          nabc_alternation = true,
+          header_validation = true,
+          notation_validation = true,
+        },
+        completion = {
+          enabled = true,
+          headers = true,
+          notation = true,
+          nabc_glyphs = true,
+        },
+        hover = {
+          enabled = true,
+          show_documentation = true,
+        },
+      },
+    },
   }
   
   -- Merge user options with defaults
@@ -35,6 +71,18 @@ function M.setup(opts)
   
   -- Store options globally
   vim.g.gabc_options = opts
+  
+  -- Initialize tree-sitter integration
+  if opts.treesitter and opts.treesitter.enabled then
+    M.treesitter.init()
+  end
+  
+  -- Initialize LSP integration
+  if opts.lsp and opts.lsp.enabled then
+    vim.defer_fn(function()
+      M.lsp.setup(opts.lsp)
+    end, 500) -- Delay to ensure LSP is available
+  end
   
   -- Set up autocmds if requested
   if opts.auto_format then
@@ -134,6 +182,34 @@ function M.create_commands()
   vim.api.nvim_create_user_command('GabcRemoveNabc', function()
     M.nabc.remove_nabc_extension()
   end, {})
+  
+  -- Tree-sitter commands
+  vim.api.nvim_create_user_command('GabcTreesitterInfo', function()
+    local info = M.treesitter.get_info()
+    if info.available then
+      vim.notify('Tree-sitter gregorio parser is available and working', vim.log.levels.INFO)
+    else
+      vim.notify('Tree-sitter gregorio parser: ' .. info.reason, vim.log.levels.WARN)
+    end
+  end, {})
+  
+  -- LSP commands  
+  vim.api.nvim_create_user_command('GabcLspInfo', function()
+    local info = M.lsp.get_info()
+    if info.available then
+      vim.notify('gregorio-lsp is attached and working', vim.log.levels.INFO)
+    else
+      vim.notify('gregorio-lsp: ' .. info.reason, vim.log.levels.WARN)
+    end
+  end, {})
+  
+  vim.api.nvim_create_user_command('GabcLspValidate', function()
+    M.lsp.validate_document()
+  end, {})
+  
+  vim.api.nvim_create_user_command('GabcLspValidateNabc', function()
+    M.lsp.validate_nabc_alternation()
+  end, {})
 end
 
 -- Convenience functions for statusline integration
@@ -147,6 +223,10 @@ function M.info()
     version = '1.0.0',
     author = 'Laércio de Sousa',
     description = 'GABC Gregorian Chant Notation plugin for Neovim',
+    integrations = {
+      treesitter = M.treesitter.get_info(),
+      lsp = M.lsp.get_info(),
+    },
   }
   
   if vim.bo.filetype == 'gabc' then

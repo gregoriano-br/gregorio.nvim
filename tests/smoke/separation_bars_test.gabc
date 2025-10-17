@@ -1,0 +1,83 @@
+name: Separation Bars Test;
+%%
+
+% Test 1: Basic bar types
+(f) Bar(g)ra:(h)rum(i);
+
+% Test 2: Divisio finalis (double bar)
+(f) Do(g)mi(h)nus::(i);
+
+% Test 3: Dotted divisio maior
+(f) glo(g)ri(h)a:?(i);
+
+% Test 4: Divisio maior (full bar)
+(f) De(g)us:(h);
+
+% Test 5: Divisio minor (half bar)
+(f) sanc(g)tus;(h);
+
+% Test 6: Divisio minima (quarter bar)
+(f) Do(g)mi(h)ne,(i);
+
+% Test 7: Divisio minimis/eighth bar
+(f) Al(g)le^(h)lu(i)ia;
+
+% Test 8: Virgula
+(f) gra`(g)ti(h)a;
+
+% Test 9: Divisio minor with numeric suffixes (1-8)
+(f) suf(g)fix;1(h);
+(f) suf(g)fix;2(h);
+(f) suf(g)fix;3(h);
+(f) suf(g)fix;4(h);
+(f) suf(g)fix;5(h);
+(f) suf(g)fix;6(h);
+(f) suf(g)fix;7(h);
+(f) suf(g)fix;8(h);
+
+% Test 10: Optional zero suffix on minima, minimis, virgula
+(f) ze(g)ro,0(h);
+(f) ze(g)ro^0(h);
+(f) ze(g)ro`0(h);
+
+% Test 11: Bar with vertical episema modifier (')
+(f) e(g)pi'(h):;
+
+% Test 12: Bar with bar brace modifier (_)
+(f) bra(g)ce_(h),;
+
+% Test 13: Combined bar with modifiers and suffixes
+(f) com(g)bi_(h);3'(i);
+
+% Test 14: Multiple bars in sequence
+(f) mul(g)ti:(h);(i),(j)^(k);
+
+% Test 15: Bar at end of word with suffix
+(f) fi(g)nal;5(h) te(i)xt;
+
+% Test 16: All bar types together
+(f) `(g) ^(h) ,(i) ;(j) :(k) :?(l) ::(m);
+
+% Test 17: Bars with modifiers
+(f) all'(g) mod_(h) ifiers;
+
+% Test 18: Edge case - colon before question mark (dotted maior)
+(f) dot(g)ted:?(h) bar;
+
+% Test 19: Edge case - double colon (finalis)
+(f) dou(g)ble::(h) bar;
+
+% Test 20: Invalid suffix (should not highlight) - 9 for divisio minor
+(f) in(g)va;9(h)lid;
+
+% Test 21: Invalid suffix (should not highlight) - 1 for minima
+(f) in(g)va,1(h)lid;
+
+% Test 22: Bar in complex neume
+(f@g@h) fu(i)sion:(j);
+
+% Test 23: Bar with spacing
+(f) spa(g)/ce:(h);
+
+% Test 24: Bar with pitch attributes
+(f[shape:virga]) at(g)tr:(h);

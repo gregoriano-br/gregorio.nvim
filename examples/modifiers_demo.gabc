@@ -1,0 +1,36 @@
+name: Pitch Modifiers and Accidentals Demo;
+%%
+(g) Simple pitch
+(-g) Initio debilis - weakened start
+(go) Oriscus
+(gO1) Oriscus scapus with suffix
+(gq) Quadratum
+(gw) Quilisma
+(gW) Quilisma quadratum
+(gv) Virga stem right
+(gV) Virga stem left
+(gvv) Bivirga
+(gvvv) Trivirga
+(gs) Stropha
+(gss) Distropha
+(gsss) Tristropha
+(g~) Liquescent deminutus
+(g<) Augmented liquescent
+(g>) Diminished liquescent
+(g=) Linea
+(gr) Punctum cavum
+(gR) Punctum quadratum surrounded
+(gr0) Punctum cavum surrounded
+(gx) Flat accidental
+(g#) Sharp accidental
+(gy) Natural accidental
+(gx?) Parenthesized flat
+(g#?) Parenthesized sharp
+(gy?) Parenthesized natural
+(g##) Soft sharp
+(gY) Soft natural
+(A0) Inclinatum left-leaning
+(A1) Inclinatum right-leaning
+(A2) Inclinatum no-leaning
+(ixiv) Real example: i with flat, then i with virga
+(gxg#gy) Multiple accidentals sequence

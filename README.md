@@ -2,19 +2,39 @@
 
 🎵 **Complete Gregorio Plugin for Neovim**
 
-A comprehensive plugin for Neovim that implements full support for [Gregorio](https://gregorio-project.github.io) project files, including advanced syntax highlighting, intelligent snippets, and powerful editing commands. This plugin brings all the functionality of [vscode-gabc](https://github.com/gregoriano-br/vscode-gabc) to Neovim with enhanced performance through modular Lua implementation.
+A comprehensive plugin for Neovim that implements full support for [Gregorio](https://gregorio-project.github.io) project files, including advanced syntax highlighting, intelligent snippets, powerful editing commands, Tree-sitter integration, and LSP support. This plugin brings all the functionality of [vscode-gregorio](https://github.com/AISCGre-BR/vscode-gregorio) to Neovim with enhanced performance through modular Lua implementation.
 
 ## Features
 
 - **Complete syntax highlighting** for GABC files (including NABC extension)
+- **Tree-sitter integration** for advanced parsing and text objects
+- **LSP support** with semantic validation and auto-completion
 - **Intelligent snippets** to accelerate GABC code writing
 - **Markup commands** to add formatting (bold, italic, color, etc.)
 - **Musical transposition** to raise/lower notes
 - **Ligature conversion** between Unicode symbols (æ, œ) and `<sp>` tags
 - **Automatic filling** of empty parentheses
 - **NABC extension detection** with statusline indication
-- **Basic validation** of GABC syntax
+- **Advanced validation** of GABC syntax and NABC alternation patterns
 - **Auto-formatting** and code cleanup
+- **LaTeX syntax highlighting** in headers
+
+## New Integration Features
+
+### Tree-sitter Support
+- Enhanced syntax highlighting with semantic understanding
+- GABC-specific text objects (`af`, `if`, `as`, `is`, `an`, `in`)
+- Incremental selection for precise editing
+- Navigation commands between syllables and notation
+
+### LSP Integration
+- Real-time semantic validation
+- Intelligent auto-completion for headers and notation
+- NABC alternation pattern validation
+- Hover documentation
+- Code actions and diagnostics
+
+See [Integration Documentation](docs/INTEGRATION.md) for detailed setup instructions.
 
 ## Plugin Structure
 
@@ -25,13 +45,19 @@ gregorio.nvim/
 ├── ftplugin/gabc.vim            # GABC-specific settings
 ├── syntax/gabc.vim              # Complete syntax highlighting
 ├── lua/gabc/                    # Lua modules for functionalities
-│   ├── init.lua                 # Main module
+│   ├── init.lua                 # Main module with integration setup
 │   ├── markup.lua               # Text markup commands
 │   ├── transpose.lua            # Musical transposition
 │   ├── utils.lua                # Utilities (ligatures, validation)
 │   ├── nabc.lua                 # NABC detection and management
-│   └── treesitter.lua           # Future Treesitter configuration
+│   ├── treesitter.lua           # Tree-sitter integration
+│   └── lsp.lua                  # LSP integration
 ├── snippets/gabc.snippets       # Snippets for UltiSnips/vim-snippets
+├── templates/                   # Pre-filled GABC templates
+│   ├── basic_gabc_template.gabc
+│   ├── nabc_gabc_template.gabc
+│   └── advanced_gabc_template.gabc
+├── docs/INTEGRATION.md          # Integration setup documentation
 ├── doc/gregorio.txt             # Vim help documentation
 ├── example.gabc                 # Example file for testing
 └── test-plugin.sh               # Plugin testing script
@@ -42,23 +68,37 @@ gregorio.nvim/
 ### Using vim-plug
 
 ```vim
-Plug 'gregoriano-br/gregorio.nvim'
+Plug 'AISCGre-BR/gregorio.nvim'
 ```
 
 ### Using packer.nvim
 
 ```lua
-use 'gregoriano-br/gregorio.nvim'
+use 'AISCGre-BR/gregorio.nvim'
 ```
 
 ### Using lazy.nvim
 
 ```lua
 {
-  'gregoriano-br/gregorio.nvim',
+  'AISCGre-BR/gregorio.nvim',
   ft = 'gabc',
+  dependencies = {
+    'nvim-treesitter/nvim-treesitter', -- Optional: for enhanced parsing
+    'neovim/nvim-lspconfig',           -- Optional: for LSP support
+  },
   config = function()
-    require('gabc').setup()
+    require('gabc').setup({
+      treesitter = {
+        enabled = true,
+        highlighting = true,
+        textobjects = true,
+      },
+      lsp = {
+        enabled = true,
+        auto_attach = true,
+      },
+    })
   end,
 }
 ```
@@ -67,7 +107,7 @@ use 'gregoriano-br/gregorio.nvim'
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/gregoriano-br/gregorio.nvim ~/.config/nvim/pack/plugins/start/gregorio.nvim
+git clone https://github.com/AISCGre-BR/gregorio.nvim ~/.config/nvim/pack/plugins/start/gregorio.nvim
 ```
 
 2. Restart Neovim or run `:PackerSync` / `:PlugInstall`
@@ -92,6 +132,40 @@ require('gabc').setup({
   
   -- Auto-format on save (default: false)
   auto_format = false,
+  
+  -- Auto-validate on save (default: false)
+  auto_validate = false,
+  
+  -- Tree-sitter integration (optional)
+  treesitter = {
+    enabled = true,           -- Enable tree-sitter integration
+    auto_install = false,     -- Auto-install parser
+    highlighting = true,      -- Enhanced syntax highlighting
+    textobjects = true,       -- GABC-specific text objects
+    incremental_selection = true, -- Incremental selection
+  },
+  
+  -- LSP integration (optional)
+  lsp = {
+    enabled = true,           -- Enable LSP integration
+    auto_attach = true,       -- Auto-attach to GABC buffers
+    cmd = nil,                -- Custom server command (optional)
+    settings = {
+      validation = {
+        enabled = true,
+        nabc_alternation = true,
+        header_validation = true,
+        notation_validation = true,
+      },
+      completion = {
+        enabled = true,
+        headers = true,
+        notation = true,
+        nabc_glyphs = true,
+      },
+    },
+  },
+})
   
   -- Auto-validate on save (default: false)
   auto_validate = false,
@@ -330,7 +404,7 @@ end, {})
 
 ## Project Status
 
-All vscode-gabc functionalities have been successfully implemented for Neovim:
+All vscode-gregorio functionalities have been successfully implemented for Neovim:
 
 - ✅ **Syntax highlighting** - Complete GABC + NABC support
 - ✅ **Intelligent snippets** - 30+ snippets for faster coding  
@@ -342,7 +416,7 @@ All vscode-gabc functionalities have been successfully implemented for Neovim:
 - ✅ **Validation and formatting** - Syntax checking and code cleanup
 - ❌ **Live preview** - Intentionally excluded (use external tools)
 
-This plugin aims to maintain feature parity with the vscode-gabc extension for Visual Studio Code while providing a native, optimized experience for Neovim users.
+This plugin aims to maintain feature parity with the vscode-gregorio extension for Visual Studio Code while providing a native, optimized experience for Neovim users.
 
 ## Contributing
 
@@ -358,7 +432,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- Based on [vscode-gabc](https://github.com/gregoriano-br/vscode-gabc) by Laércio de Sousa
+- Based on [vscode-gregorio](https://github.com/AISCGre-BR/vscode-gregorio) by Laércio de Sousa
 - Inspired by the Gregorian Chant tradition and tools like [Gregorio](http://gregorio-project.github.io/)
 - Neovim community for the excellent development platform
 

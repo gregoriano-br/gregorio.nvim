@@ -1,0 +1,58 @@
+name: Custos (End-of-Line Guide) Test;
+%%
+
+% Test 1: Basic custos with lowercase pitches
+(f) Do(g)mi(h)nus(i) f+
+
+% Test 2: Custos with uppercase pitches
+(J) De(K)us(L) K+
+
+% Test 3: Custos at end of line after bar
+(f) Al(g)le(h)lu(i)ia:: g+
+
+% Test 4: Multiple custos examples
+(a) gra(b)ti(c)a(d) d+
+(e) sanc(f)tus(g) g+
+(h) be(i)ne(j)dic(k)tus k+
+
+% Test 5: Custos with all lowercase pitches
+(a) test a+
+(b) test b+
+(c) test c+
+(d) test d+
+(e) test e+
+(f) test f+
+(g) test g+
+(h) test h+
+(i) test i+
+(j) test j+
+(k) test k+
+(l) test l+
+(m) test m+
+(n) test n+
+(p) test p+
+
+% Test 6: Custos after spacing operators
+(f) spa(g)cing// h+
+
+% Test 7: Custos after divisio marks
+(f) di(g)vi(h)sio: i+
+(f) mi(g)nor; j+
+(f) mi(g)ni(h)ma, k+
+
+% Test 8: Custos in complex context
+(f) glo(g)ri(h[shape:virga])a:(i) Pa(j)tri;(k) et(l) Fi(m)li:: m+
+
+% Test 9: Multiple custos on different lines
+(f) first(g) line f+
+(g) second(h) line h+
+(h) third(i) line i+
+
+% Test 10: Custos should NOT match + alone (not a custos)
+(f) plus + sign
+
+% Test 11: Custos should NOT match without pitch
+(f) no(g) pitch +
+
+% Test 12: Edge case - custos at very end
+(f) fi(g)nal(h) word h+

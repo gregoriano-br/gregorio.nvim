@@ -1,0 +1,64 @@
+name: Macro Test;
+%%
+% Test 1: Note-level macros (nm0-nm9)
+(f[nm0]g[nm1]h[nm2]) text;
+
+(f[nm3]g[nm4]h[nm5]) text;
+
+(f[nm6]g[nm7]h[nm8]) text;
+
+(f[nm9]) text;
+
+% Test 2: Glyph-level macros (gm0-gm9)
+(f[gm0]g[gm1]h[gm2]) text;
+
+(f[gm3]g[gm4]h[gm5]) text;
+
+(f[gm6]g[gm7]h[gm8]) text;
+
+(f[gm9]) text;
+
+% Test 3: Element-level macros (em0-em9)
+(f[em0]g[em1]h[em2]) text;
+
+(f[em3]g[em4]h[em5]) text;
+
+(f[em6]g[em7]h[em8]) text;
+
+(f[em9]) text;
+
+% Test 4: Multiple macros on same pitch
+(f[nm0][gm1][em2]g) text;
+
+% Test 5: Macros with other modifiers
+(fv[nm0]g'[gm1]h_[em2]) text;
+
+% Test 6: Macros with spacing
+(f[nm0]/g[gm1]//h[em2]) text;
+
+% Test 7: Macros with bars
+(f[nm0]:g[gm1];h[em2],) text;
+
+% Test 8: Macros with custos
+(f[nm0]g+) text;
+
+% Test 9: Macros with line breaks
+(f[nm0]) text(g) z+ (h[gm1]) text;
+
+% Test 10: Macros with other attributes
+(f[nm0][shape:virga]g[cs:forte][gm1]h[alt:*][em2]) text;
+
+% Test 11: Macros with fusions
+(f@g[nm0]@h) text;
+(f[gm1]@g@h) text;
+(@[fgh][em2]) text;
+
+% Test 12: All macro types together
+(f[nm0]g[nm1]h[nm2]i[nm3]j[nm4]k[nm5]l[nm6]m[nm7]n[nm8]p[nm9]) text;
+
+(f[gm0]g[gm1]h[gm2]i[gm3]j[gm4]k[gm5]l[gm6]m[gm7]n[gm8]p[gm9]) text;
+
+(f[em0]g[em1]h[em2]i[em3]j[em4]k[em5]l[em6]m[em7]n[em8]p[em9]) text;
+
+% Test 13: Integration test - complex notation with macros
+(f[nm0][cs:cresc.]g'_[gm1][nv:\textit{text}]h[em2][alt:*]:) text(i[nm3]+) z+;

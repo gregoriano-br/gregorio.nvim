@@ -1,0 +1,43 @@
+name: Neume Spacing Smoke Test;
+%%
+% Test 1: Half space (same neume)
+Ky(f/0g/0h)ri(i)e()
+
+% Test 2: Small separation (same neume)
+e(f/!g/!h)le(i)i(j)son()
+
+% Test 3: Small separation (different neumes)
+Chri(f/g/h)ste(i)e(j)le(k)i(l)son()
+
+% Test 4: Medium separation
+Glo(f//g//h)ri(i)a()
+
+% Test 5: Scaled spacing with positive factor
+Pa(f/[2]g/[3]h)ter()
+
+% Test 6: Scaled spacing with negative factor
+no(f/[-1]g/[-0.5]h)ster()
+
+% Test 7: Scaled spacing with decimal factor
+San(f/[1.5]g/[0.75]h)ctus()
+
+% Test 8: Zero-width space alone
+De(f!g!h)us()
+
+% Test 9: Non-breaking space (! followed by space)
+Sa(f! g! h)ba(i)oth()
+
+% Test 10: Mixed spacing operators
+Al(f/0g/!h/i//j/[2]k)le(l)lu(m)ia()
+
+% Test 11: Spacing with modifiers
+Be(fv/gw/0h~/!ivv)ne(j)dic(k)tus()
+
+% Test 12: Spacing with accidentals
+Do(fx/g#/0hy)mi(i)ne()
+
+% Test 13: Spacing with fusions
+A(f@g/h@i//j/[1.5]k)men()
+
+% Test 14: Complex combination
+Lux(f/0gv/!hw//i@j/[2]kvv/[-1]l)ae(m)ter(n)na()

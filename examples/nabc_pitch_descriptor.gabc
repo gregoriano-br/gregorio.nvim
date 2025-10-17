@@ -1,0 +1,10 @@
+name: NABC Pitch Descriptor Test;
+%%
+BasicDescriptor(e|viha|f|puhb|g|tahc)
+AfterModifier(e|viShd|f|puGhe|g|taMhf)
+WithNumbers(e|viS1hg|f|puG2hh|g|taM3hi)
+AllPitches(e|viha|f|puhb|g|tahc|a|vihd|b|puhe|c|tahf|d|vihg|e|puhh|f|tahi|g|vihj|h|puhk|i|tahl|j|vihm|k|puhn|l|tahp)
+Compound(e|grShb|f|cl-hc|g|peG2hd)
+StGall(e|stShf|f|sthg)
+Laon(e|ochh|f|unhi)
+Complex(e|viS9hj|f|puG8hk|g|ta-7hl)

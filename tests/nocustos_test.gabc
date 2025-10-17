@@ -1,0 +1,41 @@
+name: Test [nocustos] Attribute;
+%%
+
+% Test Case 1: Basic [nocustos] usage
+(f) Simple(g) note(h) with(i[nocustos]) nocustos(j) marker(k)
+
+% Test Case 2: [nocustos] before line break command
+(f) Note(g) with(h[nocustos]z) explicit(i) line(j) break(k)
+
+% Test Case 3: [nocustos] with other attributes
+(f) Combined(g[alt:text][nocustos]) attributes(h) example(i)
+
+% Test Case 4: [nocustos] with modifiers
+(f) Modified(gv[nocustos]) note(hr[nocustos]) with(i~) modifiers(j)
+
+% Test Case 5: [nocustos] in complex neume
+(fgf[nocustos]hg) Complex(e) neume(f) group(g)
+
+% Test Case 6: Multiple [nocustos] in same element
+(f[nocustos]) First(g[nocustos]) element(h) Second(i[nocustos]) element(j)
+
+% Test Case 7: [nocustos] at different pitch levels
+(a[nocustos]) Low(d[nocustos]) Mid(h[nocustos]) High(m[nocustos]) notes(k)
+
+% Test Case 8: [nocustos] with spacing
+(f/ghi[nocustos]/jkl) Notes(g) with(h) spacing(i)
+
+% Test Case 9: [nocustos] with bars
+(f) Before(g[nocustos]:) bar(h) After(i[nocustos];) minor(j)
+
+% Test Case 10: [nocustos] with fusion
+(fgf@h[nocustos]i) Fused(g) notes(h) with(i) nocustos(j)
+
+% Test Case 11: [nocustos] with custos marker
+(f) Note(g[nocustos]) before(h+) custos(i) marker(j)
+
+% Test Case 12: [nocustos] in different positions
+(f[nocustos]g) Start(h[nocustos]) middle(i[nocustos]j) end(k)
+
+% Test Case 13: [nocustos] with choral sign
+(f[cs:text][nocustos]) Combined(g[nocustos][cs:sign]) choral(h) signs(i)

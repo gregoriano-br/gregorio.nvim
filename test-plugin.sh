@@ -111,6 +111,120 @@ if command -v nvim >/dev/null 2>&1; then
     else
         echo "! Headless smoke test failed (rc=$rc)"
     fi
+
+    echo ""
+    echo "Running markup smoke test (bold/italic) with watchdog…"
+    rm -f tests/smoke_gabc_markup.out
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_markup.vim 2>/dev/null || true
+    if [ -f tests/smoke_gabc_markup.out ]; then
+        cat tests/smoke_gabc_markup.out | sed -n '1,10p'
+    fi
+    if grep -q "BOLD-GROUP=gabcBoldText" tests/smoke_gabc_markup.out && grep -q "ITALIC-GROUP=gabcItalicText" tests/smoke_gabc_markup.out; then
+        echo "✓ Markup smoke test passed"
+    else
+        echo "! Markup smoke test may have failed"
+    fi
+
+    echo ""
+    echo "Running new tags smoke test with watchdog…"
+    rm -f tests/smoke_gabc_newtags.out
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_newtags.vim 2>/dev/null || true
+    if [ -f tests/smoke_gabc_newtags.out ]; then
+        cat tests/smoke_gabc_newtags.out | sed -n '1,10p'
+    fi
+    # Check for expected groups and ensure no leakage of gabcProtrusionTag
+    if grep -q "ELISION_TEXT=gabcElisionText" tests/smoke_gabc_newtags.out && \
+       grep -q "ALT_TEXT=gabcAboveLinesText" tests/smoke_gabc_newtags.out && \
+       grep -q "PR0_COLON=gabcProtrusionColon" tests/smoke_gabc_newtags.out && \
+       grep -q "PR1_AFTER_STACK=\['gabcSyllable'\]" tests/smoke_gabc_newtags.out && \
+       ! grep -q "gabcProtrusionTag.*PR1_AFTER" tests/smoke_gabc_newtags.out; then
+        echo "✓ New tags smoke test passed (no protrusion tag leakage)"
+    else
+        echo "! New tags smoke test may have failed"
+    fi
+
+    echo ""
+    echo "Running LaTeX embedding smoke test with watchdog…"
+    rm -f tests/smoke_gabc_latex.out
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_latex.vim 2>/dev/null || true
+    if [ -f tests/smoke_gabc_latex.out ]; then
+        cat tests/smoke_gabc_latex.out | sed -n '1,10p'
+    fi
+    # Check if LaTeX syntax is recognized inside <v> tags
+    if grep -q "TEST_LATEX=PASS" tests/smoke_gabc_latex.out && \
+       grep -q "IN_VERBATIM=PASS" tests/smoke_gabc_latex.out && \
+       grep -q "NO_LEAK=PASS" tests/smoke_gabc_latex.out; then
+        echo "✓ LaTeX embedding smoke test passed"
+    else
+        echo "! LaTeX embedding smoke test may have failed"
+    fi
+
+    echo ""
+    echo "Running NABC snippet alternation smoke test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_nabc_snippet.vim 2>/dev/null | grep -E "(PASS|FAIL)" || true
+    # Check if both GABC and NABC snippets are recognized correctly
+    if timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_nabc_snippet.vim 2>&1 | grep -q "HAS_GABC_SIMPLE=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_nabc_snippet.vim 2>&1 | grep -q "HAS_NABC_SIMPLE=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_nabc_snippet.vim 2>&1 | grep -q "HAS_NABC_QUAD_3=PASS"; then
+        echo "✓ NABC snippet alternation smoke test passed"
+    else
+        echo "! NABC snippet alternation smoke test may have failed"
+    fi
+
+    echo ""
+    echo "Running GABC pitch syntax smoke test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>/dev/null | grep -E "(PASS|FAIL|HIGHLIGHT)" || true
+    # Check if pitch letters are recognized correctly
+    if timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "HAS_PITCH_A=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "HAS_PITCH_P=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "HAS_PITCH_A_UPPER=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "HAS_PITCH_P_UPPER=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch.vim 2>&1 | grep -q "IN_SNIPPET=PASS"; then
+        echo "✓ GABC pitch syntax smoke test passed"
+    else
+        echo "! GABC pitch syntax smoke test may have failed"
+    fi
+
+    echo ""
+    echo "Running GABC pitch suffix syntax smoke test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>/dev/null | grep -E "(PASS|FAIL|HIGHLIGHT)" || true
+    # Check if pitch inclinatum suffixes (0, 1, 2) are recognized correctly
+    if timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>&1 | grep -q "HAS_SUFFIX_0=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>&1 | grep -q "HAS_SUFFIX_1=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>&1 | grep -q "HAS_SUFFIX_2=PASS" && \
+       timeout 5s nvim --headless -u NONE -i NONE -S tests/smoke_gabc_pitch_suffix.vim 2>&1 | grep -q "LOWERCASE_NO_SUFFIX=PASS"; then
+        echo "✓ GABC pitch suffix syntax smoke test passed"
+    else
+        echo "! GABC pitch suffix syntax smoke test may have failed"
+    fi
+
+    echo ""
+    echo "Running GABC pitch modifiers and accidentals syntax smoke test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>/dev/null | grep -E "(PASS|FAIL|HIGHLIGHT)" || true
+    # Check if pitch modifiers and accidentals are recognized correctly
+    if timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_INITIO_DEBILIS=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_ORISCUS=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_BIVIRGA=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_TRIVIRGA=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_FLAT=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_gabc_modifiers.vim 2>&1 | grep -q "HAS_SOFT_SHARP=PASS"; then
+        echo "✓ GABC pitch modifiers and accidentals syntax smoke test passed"
+    else
+        echo "! GABC pitch modifiers and accidentals syntax smoke test may have failed"
+    fi
+
+    echo ""
+    echo "Running GABC accidental order validation test with watchdog…"
+    ./scripts/nvim-watchdog.sh 8 -- --headless -n -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>/dev/null | grep -E "(PASS|FAIL)" || true
+    # Check if accidentals are correctly ordered (pitch BEFORE accidental symbol)
+    if timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>&1 | grep -q "ACCIDENTAL_IX=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>&1 | grep -q "PITCH_I=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>&1 | grep -q "MODIFIER_V=PASS" && \
+       timeout 5s nvim --headless --noplugin -u NONE -i NONE -S tests/smoke_accidental_order.vim 2>&1 | grep -q "ACCIDENTAL_GX=PASS"; then
+        echo "✓ GABC accidental order validation test passed"
+    else
+        echo "! GABC accidental order validation test may have failed"
+    fi
 else
     echo "! Neovim not found; skipping headless smoke test"
 fi

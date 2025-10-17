@@ -1,0 +1,81 @@
+name: Rhythmic and Articulation Modifiers Test;
+%%
+
+% === GABC Rhythmic and Articulation Modifiers Test ===
+% Testing punctum mora, episema, ictus, and signs above staff
+
+% Test 1: Punctum mora vocis (.)
+(g.h.i.)
+
+% Test 2: Horizontal episema without suffix (_)
+(g_h_i_)
+
+% Test 3: Horizontal episema with suffixes (_0 through _5)
+(g_0h_1i_2)
+(g_3h_4i_5)
+
+% Test 4: Ictus without suffix (')
+(g'h'i')
+
+% Test 5: Ictus with suffixes ('0 and '1)
+(g'0h'1i'0)
+
+% Test 6: Signs above staff - accents and circles (r1-r5)
+(gr1hr2ir3)
+(gr4hr5)
+
+% Test 7: Signs above staff - musica ficta (r6-r8)
+(gr6hr7ir8)
+
+% Test 8: Combined modifiers
+(gv.h~_iw'0)
+
+% Test 9: Modifiers with accidentals
+(gx.hy_iz'1)
+
+% Test 10: Episema with different suffixes in sequence
+(g_0h_1i_2j_3k_4l_5)
+
+% Test 11: Ictus alternating
+(g'0h'1i'0j'1)
+
+% Test 12: Multiple r modifiers
+(gr1gr2gr3gr4gr5gr6gr7gr8)
+
+% Test 13: Punctum mora with other simple modifiers
+(gv.hw.i~.)
+
+% Test 14: Complex combination
+(gvv_2h'1ir1jr6)
+
+% Test 15: With uppercase pitches (inclinatum)
+(G.H_0I'1)
+
+% Test 16: With pitch suffixes
+(G0.H1_0I2'1)
+
+% Test 17: With oriscus
+(go.ho1_i'0)
+
+% Test 18: In fusion
+(f@g.@h_0@i'1)
+
+% Test 19: In collective fusion
+(@[g.h_0i'1])
+
+% Test 20: With spacing operators
+(g./h_0//i'1)
+
+% Test 21: With pitch attributes
+(g.[shape:stroke]h_0[color:red]i'1[custom:test])
+
+% Test 22: Edge case - old r0 (punctum cavum with lines) vs new modifiers
+(gr0gr1)
+
+% Test 23: All episema suffixes in one neume
+(gfedcba_0_1_2_3_4_5)
+
+% Test 24: Compound modifiers with new ones
+(gvv.hss_0isss'1)
+
+% End of rhythmic modifiers test

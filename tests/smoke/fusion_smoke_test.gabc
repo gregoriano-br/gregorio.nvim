@@ -1,0 +1,31 @@
+name: Neume Fusion Smoke Test;
+%%
+% Test 1: Individual pitch fusion with @ connector
+Ky(f@g@h)ri(i)e() (f@g)
+
+% Test 2: Collective fusion with @[...] syntax
+e(f)le(@[fgh]gf)i(h)son() (@[abc])
+
+% Test 3: Mixed individual and collective fusions
+Chri(f@g@h)ste(@[ghi])e(@[def]@g@h)le(i)i(j)son()
+
+% Test 4: Fusions with modifiers
+Do(f@gv@h)mi(@[fvgwhs])ne() (a@bv@c)
+
+% Test 5: Fusions with accidentals
+Glo(fx@g@h#)ri(@[fxghy])a() (a#@b@cy)
+
+% Test 6: Complex neume fusions with various elements
+Pa(f@g@hvv)ter(@[fghij]gf)no(@[abc]@d@evv)ster() (f@g@h@i@j)
+
+% Test 7: Fusions with uppercase pitches (inclinatum)
+San(F@G@H)ctus(@[FGH])De(F@G)us() (@[ABC])
+
+% Test 8: Edge cases - single pitch in collective fusion
+A(@[f])men() (f) (@[a]@b)
+
+% Test 9: Fusions with oriscus and other special modifiers
+Be(@[fogh])ne(f@o@g)dic(o@g@h)tus() (f@o1@g)
+
+% Test 10: Multiple collective fusions in sequence
+Al(@[abc])le(@[def])lu(@[ghi])ia() (@[fgh]@[ijk])
