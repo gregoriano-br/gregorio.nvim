@@ -1,0 +1,17 @@
+name: Complete NABC Demonstration - All Features;
+annotation: Comprehensive example showcasing all four NABC descriptor types;
+annotation: St. Gall and Laon manuscript notation traditions fully supported;
+%%
+First(f|su3) example(g|pp2m) with(a|pu1r) subpunctis(c|su4t) and(d|pp7) prepunctis.
+
+Second(f|lsba2) line(g|ltne1) demonstrates(a|lsco4) significant(c|lsla3) and(d|ltto2) tironian(f|lsqu5) letters.
+
+Final(f|//vi) example(g|/pu) with(a|`ta) horizontal(c|``gr) spacing(d|///cl) adjustment(f|//pe) descriptors.
+
+Mixed(f|su2|lsba3|//vi) complex(g|pp1m|ltne2|/pu) notation(a|pu4r|lsco1|`ta) demonstrates(c|su3|lsla4|``gr) full(d|pp2|ltto3|///cl) integration.
+
+Complete(f|su1|pp2|lsba3|ltne4|//vi) maximum(g|pu2r|lsco1|ltto5|/pu) complexity(a|su4t|pp3|lsla2|ltqu6|`ta) examples.
+
+Traditional(f|lsve) St.(g|lsst) Gall(a|lstu) shorthands(c|lshe) and(d|ltde) Laon(f|ltqu) tironian(g|ltto) letters.
+
+Spacing(f|//vi|//pu|//ta) control(g|/gr|/cl|/pe) with(a|`po|`to|`ci) multiple(c|``sc|``pf|``sf) adjustments.
