@@ -1,0 +1,9 @@
+name: New NABC Chant;
+office-part: Antiphon;
+mode: 1;
+annotation: I;
+nabc-lines: 1;
+book: St. Gall Manuscripts;
+transcriber: gregorio.nvim;
+%%
+(c4) Text(f|vi)goes(g|pu)here(h|ta).

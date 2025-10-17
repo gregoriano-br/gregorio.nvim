@@ -53,11 +53,22 @@ syntax match gabcNabcLinesHeader /^\s*nabc-lines\s*:\s*\([0-9]\+\)/ containedin=
 syntax match gabcNabcLinesField /nabc-lines/ contained
 syntax match gabcNabcLinesValue /[0-9]\+/ contained
 syntax match gabcHeaderColon /:/ contained containedin=gabcHeaders nextgroup=gabcHeaderValue skipwhite
+" Header values with potential LaTeX content
+" Special headers that support LaTeX commands within <v> tags
+syntax region gabcHeaderValueLatex start=/\%(name\s*:\s*\)\@<=[^;]*<v>/ end=+</v>[^;]*+ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon contains=gabcHeaderLatexTag
+syntax region gabcHeaderValueLatex start=/\%(annotation\s*:\s*\)\@<=[^;]*<v>/ end=+</v>[^;]*+ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon contains=gabcHeaderLatexTag
+syntax region gabcHeaderValueLatex start=/\%(commentary\s*:\s*\)\@<=[^;]*<v>/ end=+</v>[^;]*+ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon contains=gabcHeaderLatexTag
+
+" LaTeX verbatim tag within header values
+syntax region gabcHeaderLatexTag matchgroup=gabcHeaderLatexDelim start=+<v>+ end=+</v>+ contained contains=@texSyntax oneline
+
+" Standard header values (fallback for headers without LaTeX)
 syntax match gabcHeaderValue /\%(:\s*\)\@<=[^;]*/ contained containedin=gabcHeaders nextgroup=gabcHeaderSemicolon
 syntax match gabcHeaderSemicolon /;/ contained containedin=gabcHeaders
 
 " Header highlight links (use default to avoid overriding colorschemes)
 highlight default link gabcHeaderField Keyword
+highlight default link gabcHeaderLatexDelim Delimiter
 highlight default link gabcHeaderColon Operator
 highlight default link gabcHeaderValue String
 highlight default link gabcHeaderSemicolon Delimiter

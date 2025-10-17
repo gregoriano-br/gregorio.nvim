@@ -1,0 +1,8 @@
+name: New Chant;
+office-part: Antiphon;
+mode: 1;
+annotation: I;
+book: Graduale Romanum;
+transcriber: gregorio.nvim;
+%%
+(c4) Text(f)goes(g)here(h).
