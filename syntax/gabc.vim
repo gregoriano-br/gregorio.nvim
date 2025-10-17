@@ -106,6 +106,18 @@ syntax match gabcSnippet /(\@<=[^|)]\+/ contained containedin=gabcNotation trans
 " Note: NOT transparent - contains specific NABC syntax elements
 syntax match nabcSnippet /|\@<=[^|)]\+/ contained containedin=gabcNotation contains=nabcBasicGlyphDescriptor,nabcComplexGlyphDelimiter,nabcSubPrepunctisDescriptor,nabcSignificantLetter,nabcTironianLetter,nabcHorizontalSpacing
 
+" ERROR HANDLING: Fallback patterns for invalid characters
+" These patterns catch any character that doesn't match valid syntax rules
+" and highlight them as errors for debugging and validation
+
+" GABC Error: Invalid characters in GABC snippets
+" Matches specifically problematic characters that are never valid in GABC
+syntax match gabcError /[$%&\\]\+/ contained containedin=gabcSnippet
+
+" NABC Error: Invalid characters in NABC snippets  
+" Matches specifically problematic characters that are never valid in NABC
+syntax match nabcError /[$%&\\]\+/ contained containedin=nabcSnippet
+
 " ============================================================================
 " NABC GLYPH DESCRIPTORS: Structured grouping of neume elements
 " ============================================================================
@@ -845,5 +857,10 @@ highlight link gabcPitchAttrValue String
 
 " GABC and NABC snippet containers (transparent - no direct highlighting)
 " These will contain future specific notation syntax
+
+" ERROR HIGHLIGHTING: Invalid syntax markers
+" Highlight invalid characters with Error highlighting for debugging
+highlight link gabcError Error
+highlight link nabcError Error
 
 let b:current_syntax = 'gabc'

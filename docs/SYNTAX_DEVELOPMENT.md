@@ -6229,6 +6229,194 @@ All four NABC descriptor types now implemented:
 
 ---
 
-**Document Version**: 2.5  
-**Last Updated**: October 16, 2025  
+## Iteration 29: Error Detection and Validation
+
+**Date**: October 17, 2025  
+**Scope**: Syntax error detection for invalid characters in GABC and NABC contexts  
+**Motivation**: Provide debugging assistance by highlighting invalid syntax elements
+
+### Problem Statement
+
+While the syntax highlighting system correctly identifies and highlights valid GABC and NABC elements, invalid characters that don't match any defined pattern are silently ignored. This makes it difficult for users to identify syntax errors in their notation files.
+
+**Specific Issues**:
+1. Invalid characters like `$`, `%`, `&`, `\` in musical notation go undetected
+2. No visual feedback when typing incorrect symbols in GABC or NABC contexts
+3. Difficult debugging for users learning GABC notation syntax
+4. No distinction between intentionally unsupported elements and actual errors
+
+### Implementation Strategy
+
+#### VimScript Implementation
+
+**Error Pattern Design**:
+```viml
+" GABC Error: Invalid characters in GABC snippets
+syntax match gabcError /[$%&\\]\+/ contained containedin=gabcSnippet
+
+" NABC Error: Invalid characters in NABC snippets  
+syntax match nabcError /[$%&\\]\+/ contained containedin=nabcSnippet
+```
+
+**Key Design Decisions**:
+
+1. **Specific Character Set**: Target only characters that are definitively invalid (`$%&\`) rather than using broad negative patterns
+2. **Containment Strategy**: Use `containedin=` to ensure errors only trigger within snippet contexts
+3. **Conservative Approach**: Avoid false positives by focusing on clearly problematic characters
+4. **Precedence**: Error patterns have lower precedence than valid syntax elements
+
+**Highlight Group**:
+```viml
+highlight link gabcError Error
+highlight link nabcError Error
+```
+
+### Tree-sitter Implementation
+
+**Grammar Rules**:
+```javascript
+gabc_snippet: $ => repeat1(
+  choice(
+    $.pitch,
+    $.accidental,
+    // ... other valid elements
+    $.gabc_error  // Fallback for invalid characters
+  )
+),
+
+nabc_snippet: $ => repeat1(
+  choice(
+    $.nabc_spaced_glyph_descriptor,
+    // ... other valid elements  
+    $.nabc_error  // Fallback for invalid characters
+  )
+),
+
+// Error definitions with low precedence
+gabc_error: $ => prec(-2, /[$%&\\]+/),
+nabc_error: $ => prec(-2, /[$%&\\]+/),
+```
+
+**Conflict Resolution**:
+```javascript
+conflicts: $ => [
+  [$.syllable],
+  [$.lyric_text],
+  [$.gabc_error, $.nabc_error]  // Error handling ambiguity
+],
+```
+
+### Testing Strategy
+
+#### Test Files Created
+
+1. **test_error_detection.gabc**: Example file with intentional syntax errors
+2. **test_error_detection.sh**: Validation script for VimScript implementation  
+3. **test/corpus/error_detection.txt**: Tree-sitter test corpus with error cases
+
+#### Test Cases Covered
+
+**GABC Error Detection**:
+- Single invalid character: `(f$g)`
+- Multiple invalid characters: `(abc$%&\\def)`
+- Mixed valid/invalid: `(fg$hi&jk%lm)`
+
+**NABC Error Detection**:
+- Invalid in neume context: `(fg|vi$pu)`
+- Multiple errors: `(fg|vi$pu&ta%gr)`
+- Complex descriptors with errors: `(fg|vi!pu$ta)`
+
+**Validation Points**:
+- Valid GABC/NABC syntax remains unaffected
+- Error highlighting appears with Error color group
+- No false positives on valid syntax elements
+- Proper isolation between GABC and NABC error contexts
+
+### Technical Implementation Details
+
+#### Pattern Specificity
+
+**Why `[$%&\\]+` Instead of Broader Patterns**:
+
+1. **False Positive Prevention**: Broader patterns like `[^\s|)]+` caught too many valid elements
+2. **Performance**: Specific character sets parse faster than complex negative lookaheads
+3. **Maintainability**: Clear list of problematic characters is easier to understand and extend
+4. **User Experience**: Conservative error detection reduces confusion
+
+#### Precedence Management
+
+**VimScript**: Error patterns are defined after all valid patterns to ensure they act as fallback
+**Tree-sitter**: Explicit precedence (`prec(-2)`) ensures valid patterns take priority
+
+#### Context Isolation
+
+**VimScript**: `containedin=gabcSnippet` and `containedin=nabcSnippet` ensure errors only trigger in appropriate contexts
+**Tree-sitter**: Separate error rules in `gabc_snippet` and `nabc_snippet` choice lists
+
+### Results and Validation
+
+#### Successful Error Detection
+
+**VimScript Results**:
+- Invalid characters properly highlighted with Error group
+- No interference with valid syntax highlighting
+- Context-appropriate error detection (GABC vs NABC)
+
+**Tree-sitter Results**:
+- AST nodes `gabc_error` and `nabc_error` correctly generated
+- Error nodes properly positioned in snippet contexts  
+- Parsing continues normally after encountering errors
+
+#### Performance Impact
+
+- **VimScript**: Negligible performance impact due to specific pattern targeting
+- **Tree-sitter**: Error recovery allows continued parsing despite syntax errors
+- **Memory**: No significant memory overhead from error tracking
+
+### Future Enhancements
+
+#### Potential Extensions
+
+1. **Extended Character Set**: Add more invalid characters as they are identified
+2. **Contextual Messages**: Different error types for different invalid contexts
+3. **Recovery Suggestions**: Propose corrections for common typing errors
+4. **Integration**: Connect with external validation tools
+
+#### Maintenance Considerations
+
+1. **Character Set Updates**: Review and update invalid character list as GABC evolves
+2. **Performance Monitoring**: Watch for any performance degradation with complex files
+3. **User Feedback**: Collect feedback on false positives/negatives
+
+### Cross-Platform Consistency
+
+Both VimScript and Tree-sitter implementations:
+- Target identical character sets (`$%&\`)
+- Provide equivalent error detection functionality  
+- Maintain same precedence and containment behavior
+- Support same test cases and validation scenarios
+
+### Files Modified
+
+**gregorio.nvim**:
+- `syntax/gabc.vim`: Added `gabcError` and `nabcError` patterns
+- `test_error_detection.gabc`: Test file with error examples
+- `test_error_detection.sh`: Validation script
+
+**tree-sitter-gregorio**:
+- `grammar.js`: Added `gabc_error` and `nabc_error` rules with conflict resolution
+- `test/corpus/error_detection.txt`: Test corpus for error detection
+- `test_error_detection.gabc`: Shared test file
+
+### Notes
+
+1. **Conservative Approach**: Focus on clearly invalid characters to avoid false positives
+2. **User-Friendly**: Error highlighting aids learning and debugging without being intrusive  
+3. **Extensible**: Framework supports adding more sophisticated error detection
+4. **Cross-Platform**: Identical behavior between VimScript and Tree-sitter implementations
+
+---
+
+**Document Version**: 2.6  
+**Last Updated**: October 17, 2025  
 **Maintained by**: AISCGre-BR/gregorio.nvim
